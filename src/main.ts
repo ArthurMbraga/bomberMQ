@@ -1,12 +1,18 @@
-/// <reference types="kaboom" />
+// load assets
+loadSprite('bean', '/sprites/bean.png')
 
-import kaboom from "kaboom";
-
-kaboom({
-  global: true,
-});
-
+// add a character to screen
 add([
-    text("hello"),
-    pos(120, 80),
-]);
+  // list of components
+  sprite('bean'),
+  pos(80, 40),
+  area(),
+])
+
+// add a kaboom on mouse click
+onClick(() => {
+  addKaboom(mousePos())
+})
+
+// burp on 'b'
+// onKeyPress('b', burp)
