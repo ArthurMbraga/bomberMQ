@@ -263,7 +263,7 @@ scene("game", () => {
 
   const player = add([
     sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
-    pos(TILE_SIZE * 2 + TILE_SIZE * 2, TILE_SIZE * 2 + TILE_SIZE * 2),
+    pos(TILE_SIZE * 3, TILE_SIZE * 3),
     area(),
     body(),
     anchor("center"),
