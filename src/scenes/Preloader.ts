@@ -27,6 +27,17 @@ export class Preloader extends Scene {
     this.load.setPath("assets");
 
     this.load.image("logo", "logo.png");
+    this.load.image("tiles", "platformer_tiles.png");
+
+    this.load.image('tileset', '/path/to/your/tileset.png'); // Load your tileset image
+    this.load.image('bomberman_front', '/sprites/bomberman_front.png');
+    this.load.image('coin', '/sprites/coin.png');
+    this.load.image('bomb', '/sprites/16bit_bomb1.png');
+    this.load.image('spike', '/sprites/spike.png');
+    this.load.image('wall', '/sprites/wall.png');
+    this.load.spritesheet('wood', '/sprites/wood-explode.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('fire', '/sprites/fire.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.image('ghosty', '/sprites/ghosty.png');
   }
 
   create() {
