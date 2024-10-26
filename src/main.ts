@@ -10,8 +10,8 @@ import { Game, Types } from "phaser";
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 const config: Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: 16 * 48,
-  height: 16 * 48,
+  width: 18 * 48,
+  height: 18 * 48,
   parent: "game-container",
   backgroundColor: "#028af8",
   physics: {
@@ -21,6 +21,7 @@ const config: Types.Core.GameConfig = {
       debug: false,
     },
   },
+  pixelArt: true,
   scene: [Boot, Preloader, MainMenu, MainGame, GameOver],
 };
 
