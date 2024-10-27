@@ -1,4 +1,4 @@
-import { Key, Vec2 } from "kaboom";
+import { GameObj, Key, Vec2, OpacityComp } from "kaboom";
 import { bomb, destructible, explode, withOnCreate } from "./components";
 
 loadSprite("bean", "/sprites/bean.png");
@@ -30,14 +30,16 @@ const SPEED = 320;
 const TILE_SIZE = 64;
 
 scene("game", () => {
+  let livesCounter = 3;
+
   const level = addLevel(
     [
       "========================",
-      "=@      ++      $$     =",
+      "=       ++      $$     =",
       "= = = = = = = = = = = ==",
       "=      ++       ++     =",
       "= = = = = = = = = = = ==",
-      "=^      ++      ##     =",
+      "=^      ++      ++     =",
       "========================",
     ],
     {
@@ -61,15 +63,6 @@ scene("game", () => {
           timer(),
           bomb(),
           "bomb",
-          { playerId: 3 },
-        ],
-        "#": () => [
-          sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
-          area(),
-          body(),
-          anchor("center"),
-          "player",
-          { playerId: 4 },
         ],
         "=": () => [
           sprite("wall", { width: TILE_SIZE, height: TILE_SIZE }),
@@ -102,12 +95,32 @@ scene("game", () => {
     }
   );
 
+  // display score
+  const livesLabel = add([
+    text(livesCounter.toString()),
+    anchor("center"),
+    pos(width() / 2, 80),
+    fixed(),
+    z(100),
+  ]);
+
+  function removeLife() {
+    livesCounter--;
+    livesLabel.text = livesCounter.toString();
+
+    if (livesCounter <= 0) 
+      destroy(player);  
+    
+  }
+
   const player = add([
     sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
     pos(TILE_SIZE * 3, TILE_SIZE * 3),
-    area(),
+    area({ shape: new Rect(vec2(0), TILE_SIZE / 2, TILE_SIZE / 1.4) }),
     body(),
     anchor("center"),
+    "player",
+    { imune: false },   
   ]);
 
   const dirs = {
@@ -127,9 +140,31 @@ scene("game", () => {
     level.spawn("0", posToTile(player.pos.sub(TILE_SIZE * 2, TILE_SIZE * 2)));
   });
 
-  player.onCollide("explosion", () => {
-    destroy(player);
+  player.onCollide("explosion", (obj: GameObj) => {
+    const opacityComp = obj.c("opacity") as OpacityComp;
+    if (opacityComp.opacity > 0.7) removeLife();
   });
+});
+
+scene("menu", (score) => {
+  add([
+    sprite("bean"),
+    pos(width() / 2, height() / 2 - 108),
+    scale(3),
+    anchor("center"),
+  ]);
+
+  // display score
+  add([
+    text(score),
+    pos(width() / 2, height() / 2 + 108),
+    scale(3),
+    anchor("center"),
+  ]);
+
+  // go back to game with space is pressed
+  onKeyPress("space", () => go("game"));
+  onClick(() => go("game"));
 });
 
 function posToTile(pos: Vec2) {

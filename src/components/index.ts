@@ -31,7 +31,7 @@ export function bomb(): Comp {
     add() {
       const areaComp = this as AreaComp;
       areaComp.onCollideEnd("player", () => {
-        //this.
+        (this as any).use(body({ isStatic: true }));
       });
 
       const timerComp = this as TimerComp;
