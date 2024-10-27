@@ -7,7 +7,7 @@ import {
   TileComp,
   TimerComp,
   Vec2,
-} from "kaplay";
+} from "kaboom";
 
 export function destructible(): Comp {
   return {
@@ -17,8 +17,7 @@ export function destructible(): Comp {
       const tileComp = this as TileComp;
       spriteComp.onAnimEnd((anim) => {
         if (anim === "explode") {
-          // destroy(this as any);
-          tileComp.getLevel().remove(this as any);
+          tileComp.getLevel()?.remove(this as any);
         }
       });
     },

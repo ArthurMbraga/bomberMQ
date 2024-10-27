@@ -1,4 +1,4 @@
-import { Key, Vec2 } from "kaplay";
+import { Key, Vec2 } from "kaboom";
 import { bomb, destructible, explode, withOnCreate } from "./components";
 
 loadSprite("bean", "/sprites/bean.png");

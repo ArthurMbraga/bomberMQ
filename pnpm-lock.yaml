@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      kaplay:
-        specifier: github:ArthurMbraga/kaplay#master
-        version: https://codeload.github.com/ArthurMbraga/kaplay/tar.gz/f5441f12c9f866742f56cb8ccd1c1f93f01f8e16
+      kaboom:
+        specifier: github:ArthurMbraga/kaboom#master
+        version: https://codeload.github.com/ArthurMbraga/kaboom/tar.gz/d59c433df9254f1718a2cf82ee69320d3d7d6492
     devDependencies:
       typescript:
         specifier: ^5.5.3
@@ -252,9 +252,9 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  kaplay@https://codeload.github.com/ArthurMbraga/kaplay/tar.gz/f5441f12c9f866742f56cb8ccd1c1f93f01f8e16:
-    resolution: {tarball: https://codeload.github.com/ArthurMbraga/kaplay/tar.gz/f5441f12c9f866742f56cb8ccd1c1f93f01f8e16}
-    version: 4000.0.0-alpha.6
+  kaboom@https://codeload.github.com/ArthurMbraga/kaboom/tar.gz/d59c433df9254f1718a2cf82ee69320d3d7d6492:
+    resolution: {tarball: https://codeload.github.com/ArthurMbraga/kaboom/tar.gz/d59c433df9254f1718a2cf82ee69320d3d7d6492}
+    version: 3000.1.17
 
   nanoid@3.3.7:
     resolution: {integrity: sha512-eSRppjcPIatRIMC1U6UngP8XFcz8MQWGQdt1MTBQ7NaAmvXDfvNxbvWV3x2y6CdEUciCSsDHDQZbhYaB8QEo2g==}
@@ -463,7 +463,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  kaplay@https://codeload.github.com/ArthurMbraga/kaplay/tar.gz/f5441f12c9f866742f56cb8ccd1c1f93f01f8e16: {}
+  kaboom@https://codeload.github.com/ArthurMbraga/kaboom/tar.gz/d59c433df9254f1718a2cf82ee69320d3d7d6492: {}
 
   nanoid@3.3.7: {}
 
