@@ -46,6 +46,7 @@ loadSound("die", "/sounds/die.wav");
 loadSound("power_up", "/sounds/power_up.wav");
 
 const playersMap: Record<string, GameObj> = {};
+const PLAYER_ID = "1";
 
 function getPlayerById(playerId: string) {
   return playersMap[playerId];
@@ -208,9 +209,10 @@ scene("game", () => {
     down: DOWN,
   };
 
-  const player = playersMap["1"];
+  const player = playersMap[PLAYER_ID];
   for (const dir in directionsMap) {
     onKeyDown(dir as Key, () => {
+      sendPlayerAction(PLAYER_ID, dir as "up" | "down" | "left" | "right");
       player.move(
         directionsMap[dir as keyof typeof directionsMap].scale(player.curSpeed)
       );
