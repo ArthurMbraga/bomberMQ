@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "kaboom": "github:ArthurMbraga/kaboom#master",
-    "mqtt": "^5.10.1"
+    "mqtt": "^5.10.1",
+    "uuid": "^11.0.1"
   }
 }

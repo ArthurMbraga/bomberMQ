@@ -1,28 +1,13 @@
+import { Comp, GameObj, LevelComp, OpacityComp, TimerComp, Vec2 } from "kaboom";
 import {
-  Comp,
-  GameObj,
-  Key,
-  LevelComp,
-  OpacityComp,
-  TimerComp,
-  Vec2,
-} from "kaboom";
-import {
-  INITIAL_BOMB_FORCE,
   DAMAGE_DEBUF,
   IMMUNITY_TIME,
+  INITIAL_BOMB_FORCE,
   NUM_LIVES,
   SPEED,
   TILE_SIZE,
 } from "../constants";
 import { getOscillation } from "../utils";
-
-const directionsMap = {
-  left: LEFT,
-  right: RIGHT,
-  up: UP,
-  down: DOWN,
-};
 
 export type PlayerComp = Comp &
   OpacityComp &
@@ -57,10 +42,11 @@ function playerComp(): PlayerComp {
   } as any;
 }
 
-export function createPlayer(level: LevelComp) {
+export type PlayerData = { id: string; pos: Vec2 };
+export function createPlayer(data: PlayerData, level: LevelComp) {
   const player = add([
     sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
-    pos(TILE_SIZE * 3, TILE_SIZE * 3),
+    pos(data.pos.scale(TILE_SIZE)),
     area({ shape: new Rect(vec2(0), TILE_SIZE / 2, TILE_SIZE / 1.4) }),
     body(),
     anchor("center"),
@@ -75,34 +61,9 @@ export function createPlayer(level: LevelComp) {
       force: INITIAL_BOMB_FORCE,
       maxBombs: 1,
       currBombs: 0,
+      playerId: 1,
     },
   ]);
-
-  for (const dir in directionsMap) {
-    onKeyDown(dir as Key, () => {
-      player.move(
-        directionsMap[dir as keyof typeof directionsMap].scale(player.curSpeed)
-      );
-    });
-  }
-
-  onKeyPress("space", () => {
-    if (player.currBombs >= player.maxBombs) return;
-
-    // Check if there is a bomb in the same position
-    const pos = myPos2Tile(player.pos.sub(TILE_SIZE * 2, TILE_SIZE * 2));
-
-    if (level.getAt(pos).some((obj) => obj.is("bomb"))) return;
-
-    const bomb = level.spawn("0", pos) as any;
-    bomb.force = player.force;
-    bomb.onExplode = () => {
-      player.currBombs--;
-    };
-
-    play("place_bomb");
-    player.currBombs++;
-  });
 
   function removeLife() {
     player.lives--;
@@ -132,8 +93,4 @@ export function createPlayer(level: LevelComp) {
   });
 
   return player;
-}
-
-function myPos2Tile(pos: Vec2) {
-  return vec2(Math.round(pos.x / TILE_SIZE), Math.round(pos.y / TILE_SIZE));
 }

@@ -1,9 +1,10 @@
-import { LevelComp } from "kaboom";
+import { GameObj, Key, LevelComp, Vec2 } from "kaboom";
 import { bomb, destructible, explode, withOnCreate } from "./components";
 import { createPlayer } from "./components/player";
 import { INITIAL_BOMB_FORCE, TILE_SIZE } from "./constants";
 import { powerUpComp as powerUp } from "./components/powerUp";
 import mqtt from "mqtt";
+import { v4 as uuidv4 } from "uuid";
 
 loadSprite("bean", "/sprites/bean.png");
 loadSprite("bomberman_front", "/sprites/bomberman_front.png");
@@ -44,10 +45,10 @@ loadSound("place_bomb", "/sounds/place_bomb.wav");
 loadSound("die", "/sounds/die.wav");
 loadSound("power_up", "/sounds/power_up.wav");
 
-let players: { playerId: number, obj: GameObj }[] = [];
+const playersMap: Record<string, GameObj> = {};
 
-function getPlayerById(playerId: number): GameObj | undefined {
-  return players.find(p => p.playerId === playerId)?.obj;
+function getPlayerById(playerId: string) {
+  return playersMap[playerId];
 }
 
 const mqttClient = mqtt.connect("ws://localhost:1883");
@@ -55,65 +56,44 @@ const mqttClient = mqtt.connect("ws://localhost:1883");
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
   mqttClient.subscribe("game/player/+/move");
-  mqttClient.subscribe("game/newPlayer");
-});
- 
-mqttClient.on('error', (err) => {
-  console.error('Erro de conexão MQTT:', err);
+  // mqttClient.subscribe("game/newPlayer");
 });
 
-type NewPlayerMessage = {
-  playerId: number;
-  position: PlayerPosition;
-};
+mqttClient.on("error", (err) => {
+  console.error("Erro de conexão MQTT:", err);
+});
 
 type PlayerMoveMessage = {
-  direction: 'up' | 'down' | 'left' | 'right';
+  direction: "up" | "down" | "left" | "right";
 };
-
 
 mqttClient.on("message", (topic, message) => {
   console.log("Received message", topic, message.toString());
   const playerData = JSON.parse(message.toString());
 
-  if (topic === "game/newPlayer") {
-    const playerData: NewPlayerMessage = JSON.parse(message.toString());
-    addNewPlayer(playerData);
-  } else if (topic.startsWith('game/player/') && topic.endsWith('/move')) {
-    const playerId = parseInt(extractPlayerIdFromTopic(topic));
+  if (topic.startsWith("game/player/") && topic.endsWith("/move")) {
+    const playerId = extractPlayerIdFromTopic(topic);
     const playerMoveData: PlayerMoveMessage = JSON.parse(message.toString());
     handlePlayerAction(playerId, playerMoveData);
   }
-
 });
 
-function extractPlayerIdFromTopic(topic: string): string {
-  const parts = topic.split('/');
+function extractPlayerIdFromTopic(topic: string) {
+  const parts = topic.split("/");
   return parts[2];
 }
 
-function addNewPlayer(playerData: NewPlayerMessage) {
-  const newPlayer = add([
-    sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
-    pos(playerData.position.x, playerData.position.y),
-    area(),
-    body(),
-    anchor("center"),
-    "player",
-    { playerId: playerData.playerId },
-  ]);
-
-  players.push({ playerId: playerData.playerId, obj: newPlayer });
-}
-
-function sendPlayerAction(playerId: string, direction: 'up' | 'down' | 'left' | 'right') {
+function sendPlayerAction(
+  playerId: string,
+  direction: "up" | "down" | "left" | "right"
+) {
   const action: PlayerMoveMessage = { direction };
   const topic = `game/player/${playerId}/move`;
 
   mqttClient.publish(topic, JSON.stringify(action));
 }
 
-function handlePlayerAction(playerId: number, action: PlayerMoveMessage) {
+function handlePlayerAction(playerId: string, action: PlayerMoveMessage) {
   const direction = action.direction;
 
   const player = getPlayerById(playerId);
@@ -124,13 +104,13 @@ function handlePlayerAction(playerId: number, action: PlayerMoveMessage) {
   }
 
   if (direction === "left") {
-    player.move(LEFT.scale(SPEED));
+    player.move(LEFT.scale(player.curSpeed));
   } else if (direction === "right") {
-    player.move(RIGHT.scale(SPEED));
+    player.move(RIGHT.scale(player.curSpeed));
   } else if (direction === "up") {
-    player.move(UP.scale(SPEED));
+    player.move(UP.scale(player.curSpeed));
   } else if (direction === "down") {
-    player.move(DOWN.scale(SPEED));
+    player.move(DOWN.scale(player.curSpeed));
   }
 }
 
@@ -140,7 +120,7 @@ scene("game", () => {
   const level = addLevel(
     [
       "========================",
-      "=    +  ++      @@     =",
+      "=    +  ++      ++     =",
       "= = =+= =+=+=+= = = = ==",
       "=+     ++   +++ ++  +  =",
       "=+= = =+=+= = = = = = ==",
@@ -154,14 +134,6 @@ scene("game", () => {
       tileHeight: TILE_SIZE,
       pos: vec2(TILE_SIZE * 2, TILE_SIZE * 2),
       tiles: {
-        "@": () => [
-          sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
-          area(),
-          body(),
-          anchor("center"),
-          "player",
-          { playerId: 2 },
-        ],
         "0": () => [
           sprite("bomb", { width: TILE_SIZE, height: TILE_SIZE }),
           area(),
@@ -215,7 +187,7 @@ scene("game", () => {
         ],
       },
     }
-  );
+  ) as unknown as LevelComp;
 
   // display score
   const livesLabel = add([
@@ -226,13 +198,47 @@ scene("game", () => {
     z(100),
   ]);
 
-  const player = createPlayer(level as unknown as LevelComp);
-  players.push({ playerId: 1, obj: player });
-  onKeyDown(dir as Key, () => {
-    player.move(dirs[dir as keyof typeof dirs].scale(SPEED));
-    sendPlayerAction("1", dir as 'up' | 'down' | 'left' | 'right');
+  playersMap["1"] = createPlayer({ id: "1", pos: vec2(3, 3) }, level);
+  playersMap["2"] = createPlayer({ id: "2", pos: vec2(13, 3) }, level);
+
+  const directionsMap = {
+    left: LEFT,
+    right: RIGHT,
+    up: UP,
+    down: DOWN,
+  };
+
+  const player = playersMap["1"];
+  for (const dir in directionsMap) {
+    onKeyDown(dir as Key, () => {
+      player.move(
+        directionsMap[dir as keyof typeof directionsMap].scale(player.curSpeed)
+      );
+    });
+  }
+
+  onKeyPress("space", () => {
+    if (player.currBombs >= player.maxBombs) return;
+
+    // Check if there is a bomb in the same position
+    const pos = myPos2Tile(player.pos.sub(TILE_SIZE * 2, TILE_SIZE * 2));
+
+    if (level.getAt(pos).some((obj) => obj.is("bomb"))) return;
+
+    const bomb = level.spawn("0", pos) as any;
+    bomb.force = player.force;
+    bomb.onExplode = () => {
+      player.currBombs--;
+    };
+
+    play("place_bomb");
+    player.currBombs++;
   });
-0});
+
+  function myPos2Tile(pos: Vec2) {
+    return vec2(Math.round(pos.x / TILE_SIZE), Math.round(pos.y / TILE_SIZE));
+  }
+});
 
 scene("menu", (score) => {
   add([
