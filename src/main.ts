@@ -156,7 +156,7 @@ mqttClient.on("message", (topic, message) => {
     mqttClient.subscribe(`game/player/${playerId}/bomb`);
     mqttClient.subscribe(`game/player/${playerId}/death`);
 
-    if (Object.keys(playersMap).length === numberOfPlayers) go("game");
+    if (initialPlayersData.length === numberOfPlayers) go("game");
   }
 });
 

@@ -47,10 +47,10 @@ mqttClient.on("message", (topic, message) => {
           delete players[playerId];
         }
       });
-      
+
       // If there is one player connected, ignore
       if (Object.keys(players).length <= 1) return;
-      
+
       // check if all players are ready
       const allPlayersReady = Object.keys(players).every(
         (playerId) => players[playerId].isReady
@@ -61,7 +61,7 @@ mqttClient.on("message", (topic, message) => {
 
         // Give each player a random position between 0 and 3 and a color
         const positions = shuffle([0, 1, 2, 3]);
-        const colors = shuffle(["red", "blue", "green", "yellow"]);
+        const colors = shuffle(["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF"]);
         const playerIds = Object.keys(players);
 
         playerIds.forEach((playerId) => {
@@ -83,6 +83,25 @@ mqttClient.on("message", (topic, message) => {
     }
   }
 });
+
+function shuffle(array: any[]) {
+  let currentIndex = array.length;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+    // Pick a remaining element...
+    let randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ];
+  }
+
+  return array;
+}
 
 function extractPlayerIdFromTopic(topic: string) {
   const parts = topic.split("/");
