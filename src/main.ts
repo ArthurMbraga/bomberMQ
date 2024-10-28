@@ -1,10 +1,10 @@
 import { GameObj, Key, LevelComp, Vec2 } from "kaboom";
-import { bomb, destructible, explode, withOnCreate } from "./components";
-import { createPlayer } from "./components/player";
-import { INITIAL_BOMB_FORCE, TILE_SIZE } from "./constants";
-import { powerUpComp as powerUp } from "./components/powerUp";
 import mqtt from "mqtt";
-import { v4 as uuidv4 } from "uuid";
+import { destructible, explode, withOnCreate } from "./components";
+import { createPlayer } from "./components/player";
+import { powerUpComp as powerUp } from "./components/powerUp";
+import { INITIAL_BOMB_FORCE, TILE_SIZE } from "./constants";
+import { bomb, BombData } from "./components/bomb";
 
 loadSprite("bean", "/sprites/bean.png");
 loadSprite("bomberman_front", "/sprites/bomberman_front.png");
@@ -47,6 +47,7 @@ loadSound("power_up", "/sounds/power_up.wav");
 
 const playersMap: Record<string, GameObj> = {};
 const PLAYER_ID = "1";
+let level: LevelComp;
 
 function getPlayerById(playerId: string) {
   return playersMap[playerId];
@@ -57,6 +58,7 @@ const mqttClient = mqtt.connect("ws://172.20.10.8:1883");
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
   mqttClient.subscribe("game/player/+/move");
+  mqttClient.subscribe("game/place/bomb");
   // mqttClient.subscribe("game/newPlayer");
 });
 
@@ -71,8 +73,17 @@ type PlayerMoveMessage = {
 mqttClient.on("message", (topic, message) => {
   if (topic.startsWith("game/player/") && topic.endsWith("/move")) {
     const playerId = extractPlayerIdFromTopic(topic);
+
+    if (playerId === PLAYER_ID) return;
+
     const playerMoveData: PlayerMoveMessage = JSON.parse(message.toString());
     handlePlayerAction(playerId, playerMoveData);
+  }
+  if (topic === "game/place/bomb") {
+    const { position, data } = JSON.parse(message.toString());
+    const pos = vec2(position.x, position.y);
+    const bomb = placeBomb(pos, data);
+    bomb.force = data.force;
   }
 });
 
@@ -86,6 +97,22 @@ function sendPlayerPosition(playerId: string, position: Vec2) {
   const topic = `game/player/${playerId}/move`;
 
   mqttClient.publishAsync(topic, JSON.stringify(action));
+}
+
+function sendBombPlacement(position: Vec2, data: BombData) {
+  mqttClient.publishAsync(
+    "game/place/bomb",
+    JSON.stringify({ position, data })
+  );
+}
+
+function placeBomb(pos: Vec2, data: BombData) {
+  const bomb = level.spawn("0", pos) as any;
+  bomb.force = data.force;
+
+  play("place_bomb");
+
+  return bomb;
 }
 
 function handlePlayerAction(playerId: string, { position }: PlayerMoveMessage) {
@@ -102,7 +129,7 @@ function handlePlayerAction(playerId: string, { position }: PlayerMoveMessage) {
 scene("game", () => {
   let livesCounter = 3;
 
-  const level = addLevel(
+  level = addLevel(
     [
       "========================",
       "=    +  ++      ++     =",
@@ -205,19 +232,19 @@ scene("game", () => {
 
   onKeyPress("space", () => {
     if (player.currBombs >= player.maxBombs) return;
-
-    // Check if there is a bomb in the same position
     const pos = myPos2Tile(player.pos.sub(TILE_SIZE * 2, TILE_SIZE * 2));
 
     if (level.getAt(pos).some((obj) => obj.is("bomb"))) return;
 
-    const bomb = level.spawn("0", pos) as any;
-    bomb.force = player.force;
+    const bomb = placeBomb(pos, {
+      force: player.force,
+    });
+
     bomb.onExplode = () => {
       player.currBombs--;
     };
 
-    play("place_bomb");
+    sendBombPlacement(pos, { force: player.force });
     player.currBombs++;
   });
 
