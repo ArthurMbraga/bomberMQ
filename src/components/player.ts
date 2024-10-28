@@ -8,7 +8,7 @@ import {
   Vec2,
 } from "kaboom";
 import {
-  BOMB_FORCE,
+  INITIAL_BOMB_FORCE,
   DAMAGE_DEBUF,
   IMMUNITY_TIME,
   NUM_LIVES,
@@ -38,12 +38,12 @@ function playerComp(): PlayerComp {
       if (this.imune) {
         if (!this.immunityCounter) {
           this.immunityCounter = true;
-          this.velocity = SPEED * DAMAGE_DEBUF;
+          this.curSpeed *= DAMAGE_DEBUF;
 
           this.wait(IMMUNITY_TIME, () => {
             this.imune = false;
             this.immunityCounter = false;
-            this.velocity = SPEED;
+            this.curSpeed = this.speed;
           });
         }
 
@@ -67,26 +67,41 @@ export function createPlayer(level: LevelComp) {
     opacity(),
     timer(),
     playerComp() as any,
-    { imune: true, lives: NUM_LIVES, velocity: SPEED, force: BOMB_FORCE },
+    {
+      imune: true,
+      lives: NUM_LIVES,
+      speed: SPEED,
+      curSpeed: SPEED,
+      force: INITIAL_BOMB_FORCE,
+      maxBombs: 1,
+      currBombs: 0,
+    },
   ]);
 
   for (const dir in directionsMap) {
     onKeyDown(dir as Key, () => {
       player.move(
-        directionsMap[dir as keyof typeof directionsMap].scale(player.velocity)
+        directionsMap[dir as keyof typeof directionsMap].scale(player.curSpeed)
       );
     });
   }
 
   onKeyPress("space", () => {
+    if (player.currBombs >= player.maxBombs) return;
+
     // Check if there is a bomb in the same position
     const pos = myPos2Tile(player.pos.sub(TILE_SIZE * 2, TILE_SIZE * 2));
 
     if (level.getAt(pos).some((obj) => obj.is("bomb"))) return;
 
-    const bomb = level.spawn("0", pos);
-    (bomb as any).force = player.force;
+    const bomb = level.spawn("0", pos) as any;
+    bomb.force = player.force;
+    bomb.onExplode = () => {
+      player.currBombs--;
+    };
+
     play("place_bomb");
+    player.currBombs++;
   });
 
   function removeLife() {
@@ -108,6 +123,10 @@ export function createPlayer(level: LevelComp) {
   });
 
   player.onCollide("powerUp", (obj: GameObj) => {
+    player.speed += obj.stats.speed;
+    player.maxBombs += obj.stats.bombs;
+    player.force += obj.stats.range;
+
     destroy(obj);
     play("power_up");
   });

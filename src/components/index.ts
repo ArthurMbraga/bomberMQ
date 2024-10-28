@@ -8,7 +8,7 @@ import {
   TimerComp,
   Vec2,
 } from "kaboom";
-import { BOMB_FORCE, POWER_UP_PROB } from "../constants";
+import { BOMB_EXPLODE_TIME, INITIAL_BOMB_FORCE, POWER_UP_PROB } from "../constants";
 
 type DestructibleConfig = {
   stopPropagation: boolean;
@@ -66,7 +66,8 @@ export function bomb(): BombComp {
   return {
     id: "bombComp",
     require: ["scale", "pos", "timer", "area"],
-    force: BOMB_FORCE,
+    force: INITIAL_BOMB_FORCE,
+    onExplode: () => {},
     add() {
       const areaComp = this as AreaComp;
       areaComp.onCollideEnd("player", () => {
@@ -74,13 +75,14 @@ export function bomb(): BombComp {
       });
 
       const timerComp = this as TimerComp;
-      timerComp.wait(2, () => {
+      timerComp.wait(BOMB_EXPLODE_TIME, () => {
         const tileComp = this as TileComp;
         const level = tileComp.getLevel();
         const explosion = level.spawn("*", tileComp.tilePos);
         (explosion as any).force = this.force;
         destroy(this as any);
         play("explosion");
+        this.onExplode();
       });
     },
     update() {
@@ -154,7 +156,7 @@ export function explode(): ExplodeComp {
         obj.force = tileComp.force - 1;
 
         // Select sprite
-        if (obj.force === 1) obj.play("point");
+        if (obj.force == 0) obj.play("point");
         else obj.play("horizontal");
 
         // Rotate the explosion
@@ -176,7 +178,7 @@ export function explode(): ExplodeComp {
         }
       }
       // 2. case -> propagate to a specific direction
-      else if (tileComp.force > 1) {
+      else if (tileComp.force > 0) {
         const pos = tileComp.tilePos;
         const nextPos = pos.add(this.direction);
 

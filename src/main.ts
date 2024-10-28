@@ -1,7 +1,7 @@
 import { LevelComp } from "kaboom";
 import { bomb, destructible, explode, withOnCreate } from "./components";
 import { createPlayer } from "./components/player";
-import { BOMB_FORCE, TILE_SIZE } from "./constants";
+import { INITIAL_BOMB_FORCE, TILE_SIZE } from "./constants";
 import { powerUpComp as powerUp } from "./components/powerUp";
 
 loadSprite("bean", "/sprites/bean.png");
@@ -102,12 +102,13 @@ scene("game", () => {
           explode(),
           opacity(1),
           lifespan(0.5, { fade: 0.5 }),
-          { direction: undefined, force: BOMB_FORCE },
+          { direction: undefined, force: INITIAL_BOMB_FORCE },
           "explosion",
         ],
         $: () => [
           sprite("power_up", { width: TILE_SIZE / 2, height: TILE_SIZE / 2 }),
           area(),
+          color(),
           destructible({
             animate: false,
             stopPropagation: false,
