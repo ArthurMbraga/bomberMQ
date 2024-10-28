@@ -58,7 +58,7 @@ const mqttClient = mqtt.connect("ws://172.20.10.8:1883");
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
   mqttClient.subscribe("game/player/+/move");
-  mqttClient.subscribe("game/place/bomb");
+  mqttClient.subscribe("game/player/+/bomb");
   // mqttClient.subscribe("game/newPlayer");
 });
 
@@ -71,19 +71,21 @@ type PlayerMoveMessage = {
 };
 
 mqttClient.on("message", (topic, message) => {
-  if (topic.startsWith("game/player/") && topic.endsWith("/move")) {
+  if (topic.startsWith("game/player/")) {
     const playerId = extractPlayerIdFromTopic(topic);
-
     if (playerId === PLAYER_ID) return;
 
-    const playerMoveData: PlayerMoveMessage = JSON.parse(message.toString());
-    handlePlayerAction(playerId, playerMoveData);
-  }
-  if (topic === "game/place/bomb") {
-    const { position, data } = JSON.parse(message.toString());
-    const pos = vec2(position.x, position.y);
-    const bomb = placeBomb(pos, data);
-    bomb.force = data.force;
+    if (topic.endsWith("/move")) {
+      const playerMoveData: PlayerMoveMessage = JSON.parse(message.toString());
+      handlePlayerAction(playerId, playerMoveData);
+    }
+
+    if (topic.endsWith("/bomb")) {
+      const { position, data } = JSON.parse(message.toString());
+      const pos = vec2(position.x, position.y);
+      const bomb = placeBomb(pos, data);
+      bomb.force = data.force;
+    }
   }
 });
 
