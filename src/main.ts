@@ -1,10 +1,11 @@
-import { GameObj, Key, LevelComp, Vec2 } from "kaboom";
+import { GameObj, Key, LevelComp, TextComp, Vec2 } from "kaboom";
 import mqtt from "mqtt";
 import { destructible, explode, withOnCreate } from "./components";
 import { createPlayer } from "./components/player";
 import { powerUpComp as powerUp } from "./components/powerUp";
 import { INITIAL_BOMB_FORCE, TILE_SIZE } from "./constants";
 import { bomb, BombData } from "./components/bomb";
+import { v4 as uuidv4 } from "uuid";
 
 loadSprite("bean", "/sprites/bean.png");
 loadSprite("bomberman_front", "/sprites/bomberman_front.png");
@@ -52,7 +53,7 @@ setBackground(Color.fromHex("#f0f0f0"));
 const playersMap: Record<string, GameObj> = {};
 const topicsCOunter: Record<string, number> = {};
 
-const PLAYER_ID = "1";
+const PLAYER_ID = uuidv4();
 
 const LEVEL_STRING = [
   "=========================",
@@ -76,10 +77,7 @@ const mqttClient = mqtt.connect("ws://172.20.10.8:1883");
 
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
-  mqttClient.subscribe("game/player/2/attributes");
-  mqttClient.subscribe("game/player/2/bomb");
-  mqttClient.subscribe("game/player/2/death");
-  // mqttClient.subscribe("game/newPlayer");
+  mqttClient.subscribe("game/start");
 });
 
 mqttClient.on("error", (err) => {
@@ -103,6 +101,16 @@ type PlayerBombMessage = {
   position: { x: number; y: number };
   data: BombData;
 } & BaseMessage;
+
+type StartMessage = {
+  playerId: string;
+  position: number;
+  color: string;
+  numberOfPlayers: number;
+};
+
+const INITIAL_POSITIONS = [vec2(2, 2), vec2(24, 2), vec2(2, 24), vec2(24, 24)];
+const initialPlayersData: StartMessage[] = [];
 
 mqttClient.on("message", (topic, message) => {
   if (topic.startsWith("game/player/")) {
@@ -136,6 +144,19 @@ mqttClient.on("message", (topic, message) => {
 
       destroy(player);
     }
+  } else if (topic === "game/start") {
+    clearInterval(hubInterval);
+
+    const decodedMessage: StartMessage = JSON.parse(message.toString());
+
+    initialPlayersData.push(decodedMessage);
+    const { playerId, numberOfPlayers } = decodedMessage;
+
+    mqttClient.subscribe(`game/player/${playerId}/attributes`);
+    mqttClient.subscribe(`game/player/${playerId}/bomb`);
+    mqttClient.subscribe(`game/player/${playerId}/death`);
+
+    if (Object.keys(playersMap).length === numberOfPlayers) go("game");
   }
 });
 
@@ -310,15 +331,23 @@ scene("game", () => {
     z(100),
   ]);
 
-  playersMap["1"] = createPlayer(vec2(2, 2), { id: "1" });
-  playersMap["2"] = createPlayer(vec2(24, 2), { id: "2" });
-
   const directionsMap = {
     left: LEFT,
     right: RIGHT,
     up: UP,
     down: DOWN,
   };
+
+  // Add players
+  initialPlayersData.forEach((data) => {
+    const { playerId, position, color } = data;
+    const player = createPlayer(
+      vec2(position, position),
+      { id: playerId, color }
+    );
+
+    playersMap[playerId] = player;
+  });
 
   const player = playersMap[PLAYER_ID];
   // player.use(broadcastComp());
@@ -354,25 +383,73 @@ scene("game", () => {
   }
 });
 
-scene("menu", (score) => {
-  add([
-    sprite("bean"),
-    pos(width() / 2, height() / 2 - 108),
-    scale(3),
-    anchor("center"),
-  ]);
+let hubInterval: NodeJS.Timeout;
 
+scene("menu", () => {
+  let isReady = false;
   // display score
   add([
-    text(score),
+    text("Player Id:" + PLAYER_ID),
     pos(width() / 2, height() / 2 + 108),
-    scale(3),
+    scale(1),
+    color(0, 0, 0),
     anchor("center"),
   ]);
 
-  // go back to game with space is pressed
-  onKeyPress("space", () => go("game"));
-  onClick(() => go("game"));
+  addButton("Ready", vec2(width() / 2, height() / 2), (_, btnText) => {
+    isReady = true;
+    btnText.text = "Waiting...";
+  });
+
+  // Loop for sending ping to the server
+  hubInterval = setInterval(() => {
+    mqttClient.publish(
+      `hub/player/${PLAYER_ID}/ping`,
+      JSON.stringify({ isReady })
+    );
+  }, 500);
 });
 
-go("game");
+function addButton(
+  txt: string,
+  p: Vec2,
+  callback: (btn: GameObj, btnText: GameObj) => void
+) {
+  // add a parent background object
+  const btn = add([
+    rect(240, 80, { radius: 8 }),
+    pos(p),
+    area(),
+    scale(1),
+    anchor("center"),
+    outline(4),
+    color(),
+  ]);
+
+  // add a child object that displays the text
+  const btnText = btn.add([text(txt), anchor("center"), color(0, 0, 0)]);
+
+  // onHoverUpdate() comes from area() component
+  // it runs every frame when the object is being hovered
+  btn.onHoverUpdate(() => {
+    const t = time() * 10;
+    btn.color = hsl2rgb((t / 10) % 1, 0.6, 0.7);
+    btn.scale = vec2(1.2);
+    setCursor("pointer");
+  });
+
+  // onHoverEnd() comes from area() component
+  // it runs once when the object stopped being hovered
+  btn.onHoverEnd(() => {
+    btn.scale = vec2(1);
+    btn.color = rgb();
+  });
+
+  // onClick() comes from area() component
+  // it runs once when the object is clicked
+  btn.onClick(() => callback(btn, btnText));
+
+  return { btn, btnText };
+}
+
+go("menu");

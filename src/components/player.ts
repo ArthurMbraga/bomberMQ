@@ -42,21 +42,17 @@ function playerComp(): PlayerComp {
   } as any;
 }
 
-function randHexColor() {
-  return "#" + Math.floor(Math.random() * 16777215).toString(16);
-}
-
-export type PlayerData = { id: string };
+export type PlayerData = { id: string; color: string };
 export function createPlayer(position: Vec2, data: PlayerData) {
   const player = add([
     sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
     pos(position.scale(TILE_SIZE)),
-    area(), 
+    area(),
     body(),
     anchor("center"),
     opacity(),
     timer(),
-    color(randHexColor()),
+    color(data.color),
     playerComp() as any,
     {
       playerId: data.id,
