@@ -64,7 +64,7 @@ const LEVEL_STRING = [
   "= =+=+= = = = = = =+=+= =",
   "=  +++  +   +   +  +++  =",
   "=========================",
-]
+];
 
 let level: LevelComp;
 
@@ -167,7 +167,7 @@ function asyncSendPlayerAttributes(
 }
 
 // Loop thread to send player attributes
-loop(0.3, async () => {
+setInterval(async () => {
   const player = getPlayerById(PLAYER_ID);
   if (!player) return;
 
