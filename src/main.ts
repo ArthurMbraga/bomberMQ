@@ -45,6 +45,9 @@ loadSound("place_bomb", "/sounds/place_bomb.wav");
 loadSound("die", "/sounds/die.wav");
 loadSound("power_up", "/sounds/power_up.wav");
 
+// FIX SEED
+randSeed(0);
+
 const playersMap: Record<string, GameObj> = {};
 const topicsCOunter: Record<string, number> = {};
 
@@ -61,6 +64,7 @@ mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
   mqttClient.subscribe("game/player/+/move");
   mqttClient.subscribe("game/player/+/bomb");
+  mqttClient.subscribe("game/player/+/death");
   // mqttClient.subscribe("game/newPlayer");
 });
 
@@ -69,9 +73,17 @@ mqttClient.on("error", (err) => {
 });
 
 type BaseMessage = { count: number };
-type PlayerMoveMessage = {
+
+type PlayerAttributes = {
+  imune: boolean;
+  lives: number;
+  speed: number;
+  curSpeed: number;
+  force: number;
   position: { x: number; y: number };
-} & BaseMessage;
+};
+
+type PlayerAttributesMessage = PlayerAttributes & BaseMessage;
 
 type PlayerBombMessage = {
   position: { x: number; y: number };
@@ -90,8 +102,11 @@ mqttClient.on("message", (topic, message) => {
     if (topicsCOunter[topic] > decodedMessage.count) return;
     topicsCOunter[topic] = decodedMessage.count;
 
-    if (topic.endsWith("/move")) {
-      handlePlayerAction(playerId, decodedMessage as PlayerMoveMessage);
+    if (topic.endsWith("/atributes")) {
+      handlePlayerAttributes(
+        playerId,
+        decodedMessage as PlayerAttributesMessage
+      );
     }
 
     if (topic.endsWith("/bomb")) {
@@ -99,6 +114,13 @@ mqttClient.on("message", (topic, message) => {
       const pos = vec2(position.x, position.y);
       const bomb = placeBomb(pos, data);
       bomb.force = data.force;
+    }
+
+    if (topic.endsWith("/death")) {
+      const player = getPlayerById(playerId);
+      if (!player) return;
+
+      destroy(player);
     }
   }
 });
@@ -108,10 +130,13 @@ function extractPlayerIdFromTopic(topic: string) {
   return parts[2];
 }
 
-let positionCounter = 0;
-function sendPlayerPosition(playerId: string, position: Vec2) {
-  const action: PlayerMoveMessage = { position, count: positionCounter++ };
-  const topic = `game/player/${playerId}/move`;
+let attributesCounter = 0;
+function sendPlayerAttributes(playerId: string, attributes: PlayerAttributes) {
+  const action: PlayerAttributesMessage = {
+    ...attributes,
+    count: attributesCounter++,
+  };
+  const topic = `game/player/${playerId}/attributes`;
 
   mqttClient.publishAsync(topic, JSON.stringify(action));
 }
@@ -138,7 +163,10 @@ function placeBomb(pos: Vec2, data: BombData) {
   return bomb;
 }
 
-function handlePlayerAction(playerId: string, { position }: PlayerMoveMessage) {
+function handlePlayerAttributes(
+  playerId: string,
+  atributes: PlayerAttributesMessage
+) {
   const player = getPlayerById(playerId);
 
   if (!player) {
@@ -146,7 +174,32 @@ function handlePlayerAction(playerId: string, { position }: PlayerMoveMessage) {
     return;
   }
 
+  const { imune, lives, speed, curSpeed, force, position } = atributes;
+
+  player.imune = imune;
+  player.lives = lives;
+  player.speed = speed;
+  player.curSpeed = curSpeed;
+  player.force = force;
   player.pos = vec2(position.x, position.y);
+}
+
+function broadcastComp(): any {
+  return {
+    id: "broadCast",
+    update() {
+      const attributes = {
+        imune: this.imune,
+        lives: this.lives,
+        speed: this.speed,
+        curSpeed: this.curSpeed,
+        force: this.force,
+        position: { x: this.pos.x, y: this.pos.y },
+      } as PlayerAttributes;
+
+      sendPlayerAttributes(this.playerId, attributes);
+    },
+  } as any;
 }
 
 scene("game", () => {
@@ -233,8 +286,8 @@ scene("game", () => {
     z(100),
   ]);
 
-  playersMap["1"] = createPlayer({ id: "1", pos: vec2(3, 3) }, level);
-  playersMap["2"] = createPlayer({ id: "2", pos: vec2(13, 3) }, level);
+  playersMap["1"] = createPlayer(vec2(3, 3), { id: "1" });
+  playersMap["2"] = createPlayer(vec2(13, 3), { id: "2" });
 
   const directionsMap = {
     left: LEFT,
@@ -244,12 +297,14 @@ scene("game", () => {
   };
 
   const player = playersMap[PLAYER_ID];
+  player.use(broadcastComp());
+
   for (const dir in directionsMap) {
     onKeyDown(dir as Key, () => {
       player.move(
         directionsMap[dir as keyof typeof directionsMap].scale(player.curSpeed)
       );
-      sendPlayerPosition(PLAYER_ID, player.pos);
+      sendPlayerAttributes(PLAYER_ID, player.pos);
     });
   }
 

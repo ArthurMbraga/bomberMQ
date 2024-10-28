@@ -1,4 +1,4 @@
-import { Comp, GameObj, LevelComp, OpacityComp, TimerComp, Vec2 } from "kaboom";
+import { Comp, GameObj, OpacityComp, TimerComp, Vec2 } from "kaboom";
 import {
   DAMAGE_DEBUF,
   IMMUNITY_TIME,
@@ -42,18 +42,24 @@ function playerComp(): PlayerComp {
   } as any;
 }
 
-export type PlayerData = { id: string; pos: Vec2 };
-export function createPlayer(data: PlayerData, level: LevelComp) {
+function randHexColor() {
+  return "#" + Math.floor(Math.random() * 16777215).toString(16);
+}
+
+export type PlayerData = { id: string };
+export function createPlayer(position: Vec2, data: PlayerData) {
   const player = add([
     sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
-    pos(data.pos.scale(TILE_SIZE)),
+    pos(position.scale(TILE_SIZE)),
     area({ shape: new Rect(vec2(0), TILE_SIZE / 2, TILE_SIZE / 1.4) }),
     body(),
     anchor("center"),
     opacity(),
     timer(),
+    color(randHexColor()),
     playerComp() as any,
     {
+      playerId: data.id,
       imune: true,
       lives: NUM_LIVES,
       speed: SPEED,
@@ -61,7 +67,6 @@ export function createPlayer(data: PlayerData, level: LevelComp) {
       force: INITIAL_BOMB_FORCE,
       maxBombs: 1,
       currBombs: 0,
-      playerId: 1,
     },
   ]);
 
