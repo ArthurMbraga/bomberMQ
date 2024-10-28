@@ -65,12 +65,10 @@ mqttClient.on("error", (err) => {
 });
 
 type PlayerMoveMessage = {
-  position: Vec2;
+  position: { x: number; y: number };
 };
 
 mqttClient.on("message", (topic, message) => {
-  const playerData = JSON.parse(message.toString());
-
   if (topic.startsWith("game/player/") && topic.endsWith("/move")) {
     const playerId = extractPlayerIdFromTopic(topic);
     const playerMoveData: PlayerMoveMessage = JSON.parse(message.toString());
@@ -90,17 +88,15 @@ function sendPlayerPosition(playerId: string, position: Vec2) {
   mqttClient.publishAsync(topic, JSON.stringify(action));
 }
 
-function handlePlayerAction(playerId: string, action: PlayerMoveMessage) {
+function handlePlayerAction(playerId: string, { position }: PlayerMoveMessage) {
   const player = getPlayerById(playerId);
-  const position = action.position;
 
   if (!player) {
     console.warn("Player not found", playerId);
     return;
   }
 
-  player.pos = position;
-
+  player.pos = vec2(position.x, position.y);
 }
 
 scene("game", () => {
