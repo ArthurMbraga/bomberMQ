@@ -46,6 +46,8 @@ loadSound("die", "/sounds/die.wav");
 loadSound("power_up", "/sounds/power_up.wav");
 
 const playersMap: Record<string, GameObj> = {};
+const topicsCOunter: Record<string, number> = {};
+
 const PLAYER_ID = "1";
 let level: LevelComp;
 
@@ -66,22 +68,34 @@ mqttClient.on("error", (err) => {
   console.error("Erro de conexão MQTT:", err);
 });
 
+type BaseMessage = { count: number };
 type PlayerMoveMessage = {
   position: { x: number; y: number };
-};
+} & BaseMessage;
+
+type PlayerBombMessage = {
+  position: { x: number; y: number };
+  data: BombData;
+} & BaseMessage;
 
 mqttClient.on("message", (topic, message) => {
   if (topic.startsWith("game/player/")) {
     const playerId = extractPlayerIdFromTopic(topic);
     if (playerId === PLAYER_ID) return;
 
+    const decodedMessage: BaseMessage = JSON.parse(message.toString());
+
+    if (!topicsCOunter[topic]) topicsCOunter[topic] = decodedMessage.count;
+
+    if (topicsCOunter[topic] > decodedMessage.count) return;
+    topicsCOunter[topic] = decodedMessage.count;
+
     if (topic.endsWith("/move")) {
-      const playerMoveData: PlayerMoveMessage = JSON.parse(message.toString());
-      handlePlayerAction(playerId, playerMoveData);
+      handlePlayerAction(playerId, decodedMessage as PlayerMoveMessage);
     }
 
     if (topic.endsWith("/bomb")) {
-      const { position, data } = JSON.parse(message.toString());
+      const { position, data } = decodedMessage as PlayerBombMessage;
       const pos = vec2(position.x, position.y);
       const bomb = placeBomb(pos, data);
       bomb.force = data.force;
@@ -94,17 +108,24 @@ function extractPlayerIdFromTopic(topic: string) {
   return parts[2];
 }
 
+let positionCounter = 0;
 function sendPlayerPosition(playerId: string, position: Vec2) {
-  const action: PlayerMoveMessage = { position };
+  const action: PlayerMoveMessage = { position, count: positionCounter++ };
   const topic = `game/player/${playerId}/move`;
 
   mqttClient.publishAsync(topic, JSON.stringify(action));
 }
 
+let bombCounter = 0;
 function sendBombPlacement(position: Vec2, data: BombData) {
+  const action: PlayerBombMessage = {
+    position,
+    data,
+    count: bombCounter++,
+  };
   mqttClient.publishAsync(
-    "game/place/bomb",
-    JSON.stringify({ position, data })
+    `game/player/${PLAYER_ID}/bomb`,
+    JSON.stringify(action)
   );
 }
 
