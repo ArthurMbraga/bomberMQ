@@ -8,26 +8,65 @@ import {
   TimerComp,
   Vec2,
 } from "kaboom";
+import { BOMB_FORCE, POWER_UP_PROB } from "../constants";
 
-export function destructible(): Comp {
+type DestructibleConfig = {
+  stopPropagation: boolean;
+  animate: boolean;
+  noPowerUp?: boolean;
+};
+
+export type DestructibleComp = {
+  stopPropagation: boolean;
+  animate: boolean;
+  begin: () => boolean;
+} & Comp &
+  SpriteComp &
+  TileComp;
+
+export function destructible(config: DestructibleConfig): DestructibleComp {
   return {
     id: "destructible",
+    require: ["sprite", "tile"],
     add() {
-      const spriteComp = this as SpriteComp;
-      const tileComp = this as TileComp;
-      spriteComp.onAnimEnd((anim) => {
+      const spriteComp = this;
+      const tileComp = this;
+      const level = tileComp.getLevel();
+      spriteComp.onAnimEnd((anim: string) => {
         if (anim === "explode") {
-          tileComp.getLevel()?.remove(this as any);
+          level?.remove(this as any);
+
+          if (!config.noPowerUp && Math.random() < POWER_UP_PROB) {
+            level.spawn("$", tileComp.tilePos);
+          }
         }
       });
     },
-  };
+    begin() {
+      const tileComp = this;
+      const spriteComp = this;
+
+      const level = tileComp.getLevel();
+      if (config.animate) spriteComp.play("explode");
+      else level?.remove(this as any);
+      return config.stopPropagation;
+    },
+  } as any;
 }
 
-export function bomb(): Comp {
+type BombComp = {
+  force: number;
+} & Comp &
+  AreaComp &
+  TimerComp &
+  ScaleComp &
+  TileComp;
+
+export function bomb(): BombComp {
   return {
     id: "bombComp",
     require: ["scale", "pos", "timer", "area"],
+    force: BOMB_FORCE,
     add() {
       const areaComp = this as AreaComp;
       areaComp.onCollideEnd("player", () => {
@@ -38,8 +77,10 @@ export function bomb(): Comp {
       timerComp.wait(2, () => {
         const tileComp = this as TileComp;
         const level = tileComp.getLevel();
-        level.spawn("*", tileComp.tilePos);
+        const explosion = level.spawn("*", tileComp.tilePos);
+        (explosion as any).force = this.force;
         destroy(this as any);
+        play("explosion");
       });
     },
     update() {
@@ -47,7 +88,7 @@ export function bomb(): Comp {
       const variation = 0.15;
       scaleComp.scaleTo(1 + -1 * variation * 0.5 * (Math.sin(time() * 8) + 1));
     },
-  };
+  } as any;
 }
 
 type OnCreateComp = {
@@ -71,9 +112,10 @@ export function withOnCreate(): OnCreateComp {
 type ExplodeComp = {
   direction: Vec2;
   force: number;
-};
+} & Comp &
+  OnCreateComp;
 
-export function explode(): Comp & Partial<OnCreateComp> & Partial<ExplodeComp> {
+export function explode(): ExplodeComp {
   return {
     id: "explode",
     require: ["pos", "withOnCreate", "rotate"],
@@ -91,18 +133,17 @@ export function explode(): Comp & Partial<OnCreateComp> & Partial<ExplodeComp> {
       }
       function detonateAt(pos: Vec2) {
         const objs = level.getAt(pos);
-        let detonated = false;
+        let stopPropagation = false;
 
         objs.map((obj) => {
           if (obj.c("destructible")) {
-            const spriteComp = obj.c("sprite") as SpriteComp;
-            spriteComp.play("explode");
-
-            detonated = true;
+            const destructibleComp = obj.c("destructible") as DestructibleComp;
+            const shouldStopPropagation = destructibleComp.begin();
+            if (shouldStopPropagation) stopPropagation = true;
           }
         });
 
-        return detonated;
+        return stopPropagation;
       }
 
       function spawnExplosion(pos: Vec2, dir: Vec2) {
@@ -143,10 +184,5 @@ export function explode(): Comp & Partial<OnCreateComp> & Partial<ExplodeComp> {
           spawnExplosion(nextPos, this.direction);
       }
     },
-    update() {
-      // const pos = this as TileComp;
-      // console.log("Explode", pos.tilePos);
-      // const pos = this as PosComp;
-    },
-  };
+  } as any;
 }

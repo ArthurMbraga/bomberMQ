@@ -1,9 +1,11 @@
-import { GameObj, Key, Vec2, OpacityComp } from "kaboom";
+import { LevelComp } from "kaboom";
 import { bomb, destructible, explode, withOnCreate } from "./components";
+import { createPlayer } from "./components/player";
+import { BOMB_FORCE, TILE_SIZE } from "./constants";
+import { powerUpComp as powerUp } from "./components/powerUp";
 
 loadSprite("bean", "/sprites/bean.png");
 loadSprite("bomberman_front", "/sprites/bomberman_front.png");
-loadSprite("coin", "/sprites/coin.png");
 loadSprite("spike", "/sprites/spike.png");
 loadSprite("wall", "/sprites/wall.png");
 loadSprite("wood", "/sprites/wood-explode.png", {
@@ -25,9 +27,21 @@ loadSprite("fire", "/sprites/fire.png", {
     point: 2,
   },
 });
+loadSprite("power_up", "/sprites/power_up.png", {
+  sliceX: 3,
+  sliceY: 1,
+  anims: {
+    range: 0,
+    speed: 1,
+    bomb: 2,
+  },
+});
 
-const SPEED = 320;
-const TILE_SIZE = 64;
+loadSound("explosion", "/sounds/explosion.wav");
+loadSound("damage", "/sounds/damage.wav");
+loadSound("place_bomb", "/sounds/place_bomb.wav");
+loadSound("die", "/sounds/die.wav");
+loadSound("power_up", "/sounds/power_up.wav");
 
 scene("game", () => {
   let livesCounter = 3;
@@ -35,11 +49,11 @@ scene("game", () => {
   const level = addLevel(
     [
       "========================",
-      "=       ++      $$     =",
-      "= = = = = = = = = = = ==",
-      "=      ++       ++     =",
-      "= = = = = = = = = = = ==",
-      "=^      ++      ++     =",
+      "=       ++      @@     =",
+      "= = = = =+=+=+= = = = ==",
+      "=+     ++   +++ ++  +  =",
+      "=+= =+=+=+= = = = = = ==",
+      "=+  +   ++      ++  +  =",
       "========================",
     ],
     {
@@ -47,7 +61,7 @@ scene("game", () => {
       tileHeight: TILE_SIZE,
       pos: vec2(TILE_SIZE * 2, TILE_SIZE * 2),
       tiles: {
-        $: () => [
+        "@": () => [
           sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
           area(),
           body(),
@@ -74,13 +88,13 @@ scene("game", () => {
         "+": () => [
           sprite("wood", { width: TILE_SIZE, height: TILE_SIZE }),
           area(),
-          destructible(),
+          destructible({ animate: true, stopPropagation: true }),
           body({ isStatic: true }),
           anchor("center"),
         ],
         "*": () => [
           sprite("fire", { width: TILE_SIZE, height: TILE_SIZE }),
-          area(),
+          area({ scale: 0.9 }),
           withOnCreate(),
           anchor("center"),
           pos(),
@@ -88,8 +102,19 @@ scene("game", () => {
           explode(),
           opacity(1),
           lifespan(0.5, { fade: 0.5 }),
-          { direction: undefined, force: 4 },
+          { direction: undefined, force: BOMB_FORCE },
           "explosion",
+        ],
+        $: () => [
+          sprite("power_up", { width: TILE_SIZE / 2, height: TILE_SIZE / 2 }),
+          area(),
+          destructible({
+            animate: false,
+            stopPropagation: false,
+            noPowerUp: true,
+          }),
+          anchor("center"),
+          powerUp(),
         ],
       },
     }
@@ -104,46 +129,7 @@ scene("game", () => {
     z(100),
   ]);
 
-  function removeLife() {
-    livesCounter--;
-    livesLabel.text = livesCounter.toString();
-
-    if (livesCounter <= 0) 
-      destroy(player);  
-    
-  }
-
-  const player = add([
-    sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
-    pos(TILE_SIZE * 3, TILE_SIZE * 3),
-    area({ shape: new Rect(vec2(0), TILE_SIZE / 2, TILE_SIZE / 1.4) }),
-    body(),
-    anchor("center"),
-    "player",
-    { imune: false },   
-  ]);
-
-  const dirs = {
-    left: LEFT,
-    right: RIGHT,
-    up: UP,
-    down: DOWN,
-  };
-
-  for (const dir in dirs) {
-    onKeyDown(dir as Key, () => {
-      player.move(dirs[dir as keyof typeof dirs].scale(SPEED));
-    });
-  }
-
-  onKeyPress("space", () => {
-    level.spawn("0", posToTile(player.pos.sub(TILE_SIZE * 2, TILE_SIZE * 2)));
-  });
-
-  player.onCollide("explosion", (obj: GameObj) => {
-    const opacityComp = obj.c("opacity") as OpacityComp;
-    if (opacityComp.opacity > 0.7) removeLife();
-  });
+  const player = createPlayer(level as unknown as LevelComp);
 });
 
 scene("menu", (score) => {
@@ -166,9 +152,5 @@ scene("menu", (score) => {
   onKeyPress("space", () => go("game"));
   onClick(() => go("game"));
 });
-
-function posToTile(pos: Vec2) {
-  return vec2(Math.round(pos.x / TILE_SIZE), Math.round(pos.y / TILE_SIZE));
-}
 
 go("game");
