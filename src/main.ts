@@ -52,7 +52,7 @@ function getPlayerById(playerId: string) {
   return playersMap[playerId];
 }
 
-const mqttClient = mqtt.connect("ws://localhost:1883");
+const mqttClient = mqtt.connect("ws://172.20.10.8:1883");
 
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
@@ -65,11 +65,10 @@ mqttClient.on("error", (err) => {
 });
 
 type PlayerMoveMessage = {
-  direction: "up" | "down" | "left" | "right";
+  position: Vec2;
 };
 
 mqttClient.on("message", (topic, message) => {
-  console.log("Received message", topic, message.toString());
   const playerData = JSON.parse(message.toString());
 
   if (topic.startsWith("game/player/") && topic.endsWith("/move")) {
@@ -84,35 +83,24 @@ function extractPlayerIdFromTopic(topic: string) {
   return parts[2];
 }
 
-function sendPlayerAction(
-  playerId: string,
-  direction: "up" | "down" | "left" | "right"
-) {
-  const action: PlayerMoveMessage = { direction };
+function sendPlayerPosition(playerId: string, position: Vec2) {
+  const action: PlayerMoveMessage = { position };
   const topic = `game/player/${playerId}/move`;
 
-  mqttClient.publish(topic, JSON.stringify(action));
+  mqttClient.publishAsync(topic, JSON.stringify(action));
 }
 
 function handlePlayerAction(playerId: string, action: PlayerMoveMessage) {
-  const direction = action.direction;
-
   const player = getPlayerById(playerId);
+  const position = action.position;
 
   if (!player) {
     console.warn("Player not found", playerId);
     return;
   }
 
-  if (direction === "left") {
-    player.move(LEFT.scale(player.curSpeed));
-  } else if (direction === "right") {
-    player.move(RIGHT.scale(player.curSpeed));
-  } else if (direction === "up") {
-    player.move(UP.scale(player.curSpeed));
-  } else if (direction === "down") {
-    player.move(DOWN.scale(player.curSpeed));
-  }
+  player.pos = position;
+
 }
 
 scene("game", () => {
@@ -212,10 +200,10 @@ scene("game", () => {
   const player = playersMap[PLAYER_ID];
   for (const dir in directionsMap) {
     onKeyDown(dir as Key, () => {
-      sendPlayerAction(PLAYER_ID, dir as "up" | "down" | "left" | "right");
       player.move(
         directionsMap[dir as keyof typeof directionsMap].scale(player.curSpeed)
       );
+      sendPlayerPosition(PLAYER_ID, player.pos);
     });
   }
 
