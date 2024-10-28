@@ -1,5 +1,5 @@
 export const TILE_SIZE = 64;
-export const SPEED = 320;
+export const SPEED = 150;
 export const DAMAGE_DEBUF = 0.5;
 export const IMMUNITY_TIME = 2;
 export const INITIAL_BOMB_FORCE = 1;

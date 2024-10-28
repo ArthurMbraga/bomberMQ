@@ -51,7 +51,7 @@ export function createPlayer(position: Vec2, data: PlayerData) {
   const player = add([
     sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
     pos(position.scale(TILE_SIZE)),
-    area({ shape: new Rect(vec2(0), TILE_SIZE / 2, TILE_SIZE / 1.4) }),
+    area(), 
     body(),
     anchor("center"),
     opacity(),

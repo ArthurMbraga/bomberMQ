@@ -21,9 +21,16 @@ export function bomb(): BombComp {
     force: INITIAL_BOMB_FORCE,
     onExplode: () => {},
     add() {
+      let collideCount = 0;
       const areaComp = this as AreaComp;
       areaComp.onCollideEnd("player", () => {
+        collideCount--;
+        if (collideCount > 0) return;
         (this as any).use(body({ isStatic: true }));
+      });
+
+      areaComp.onCollide("player", () => {
+        collideCount++;
       });
 
       const timerComp = this as TimerComp;

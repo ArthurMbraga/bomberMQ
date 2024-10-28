@@ -47,11 +47,25 @@ loadSound("power_up", "/sounds/power_up.wav");
 
 // FIX SEED
 randSeed(0);
+setBackground(Color.fromHex("#f0f0f0"));
 
 const playersMap: Record<string, GameObj> = {};
 const topicsCOunter: Record<string, number> = {};
 
 const PLAYER_ID = "1";
+
+const LEVEL_STRING = [
+  "=========================",
+  "=  +++  +   +   +  +++  =",
+  "= =+=+= = = = = = =+=+= =",
+  "=  +++  +  +++  +  +++  =",
+  "=+=+=+=+=+=+=+=+=+=+=+=+=",
+  "=  +++  +  +++  +  +++  =",
+  "= =+=+= = = = = = =+=+= =",
+  "=  +++  +   +   +  +++  =",
+  "=========================",
+]
+
 let level: LevelComp;
 
 function getPlayerById(playerId: string) {
@@ -62,9 +76,9 @@ const mqttClient = mqtt.connect("ws://172.20.10.8:1883");
 
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
-  mqttClient.subscribe("game/player/+/attributes");
-  mqttClient.subscribe("game/player/+/bomb");
-  mqttClient.subscribe("game/player/+/death");
+  mqttClient.subscribe("game/player/2/attributes");
+  mqttClient.subscribe("game/player/2/bomb");
+  mqttClient.subscribe("game/player/2/death");
   // mqttClient.subscribe("game/newPlayer");
 });
 
@@ -152,6 +166,23 @@ function asyncSendPlayerAttributes(
   });
 }
 
+// Loop thread to send player attributes
+loop(0.3, async () => {
+  const player = getPlayerById(PLAYER_ID);
+  if (!player) return;
+
+  const attributes = {
+    imune: player.imune,
+    lives: player.lives,
+    speed: player.speed,
+    curSpeed: player.curSpeed,
+    force: player.force,
+    position: { x: player.pos.x, y: player.pos.y },
+  } as PlayerAttributes;
+
+  await asyncSendPlayerAttributes(PLAYER_ID, attributes);
+});
+
 let bombCounter = 0;
 function sendBombPlacement(position: Vec2, data: BombData) {
   const action: PlayerBombMessage = {
@@ -209,77 +240,66 @@ function broadcastComp(): any {
 scene("game", () => {
   let livesCounter = 3;
 
-  level = addLevel(
-    [
-      "========================",
-      "=    +  ++      ++     =",
-      "= = =+= =+=+=+= = = = ==",
-      "=+     ++   +++ ++  +  =",
-      "=+= = =+=+= = = = = = ==",
-      "=+  +   ++ +  + ++  +  =",
-      "=+= =+=+=+= =+= = = = ==",
-      "=+  +   ++ +++  ++  +  =",
-      "========================",
-    ],
-    {
-      tileWidth: TILE_SIZE,
-      tileHeight: TILE_SIZE,
-      pos: vec2(TILE_SIZE * 2, TILE_SIZE * 2),
-      tiles: {
-        "0": () => [
-          sprite("bomb", { width: TILE_SIZE, height: TILE_SIZE }),
-          area(),
-          anchor("center"),
-          scale(0.5),
-          timer(),
-          bomb(),
-          "bomb",
-        ],
-        "=": () => [
-          sprite("wall", { width: TILE_SIZE, height: TILE_SIZE }),
-          area(),
-          body({ isStatic: true }),
-          anchor("center"),
-          "wall",
-        ],
-        "+": () => [
-          sprite("wood", { width: TILE_SIZE, height: TILE_SIZE }),
-          area(),
-          destructible({ animate: true, stopPropagation: true }),
-          body({ isStatic: true }),
-          anchor("center"),
-        ],
-        "*": () => [
-          sprite("fire", { width: TILE_SIZE, height: TILE_SIZE }),
-          area({ scale: 0.9 }),
-          withOnCreate(),
-          anchor("center"),
-          pos(),
-          rotate(0),
-          explode(),
-          opacity(1),
-          lifespan(0.5, { fade: 0.5 }),
-          { direction: undefined, force: INITIAL_BOMB_FORCE },
-          "explosion",
-        ],
-        $: () => [
-          sprite("power_up", {
-            width: TILE_SIZE / 1.5,
-            height: TILE_SIZE / 1.5,
-          }),
-          area(),
-          color(),
-          destructible({
-            animate: false,
-            stopPropagation: false,
-            noPowerUp: true,
-          }),
-          anchor("center"),
-          powerUp(),
-        ],
-      },
-    }
-  ) as unknown as LevelComp;
+  level = addLevel(LEVEL_STRING, {
+    tileWidth: TILE_SIZE,
+    tileHeight: TILE_SIZE,
+    pos: vec2(TILE_SIZE * 1, TILE_SIZE * 1),
+    tiles: {
+      "0": () => [
+        sprite("bomb", { width: TILE_SIZE, height: TILE_SIZE }),
+        area(),
+        anchor("center"),
+        scale(0.5),
+        timer(),
+        bomb(),
+        "bomb",
+      ],
+      "=": () => [
+        sprite("wall", { width: TILE_SIZE, height: TILE_SIZE }),
+        area(),
+        body({ isStatic: true }),
+        anchor("center"),
+        "wall",
+      ],
+      "+": () => [
+        sprite("wood", { width: TILE_SIZE, height: TILE_SIZE }),
+        area(),
+        destructible({ animate: true, stopPropagation: true }),
+        body({ isStatic: true }),
+        anchor("center"),
+      ],
+      "*": () => [
+        sprite("fire", { width: TILE_SIZE, height: TILE_SIZE }),
+        area({ scale: 0.5 }),
+        withOnCreate(),
+        anchor("center"),
+        pos(),
+        rotate(0),
+        explode(),
+        opacity(1),
+        lifespan(0.5, { fade: 0.5 }),
+        { direction: undefined, force: INITIAL_BOMB_FORCE },
+        "explosion",
+      ],
+      $: () => [
+        sprite("power_up", {
+          width: TILE_SIZE / 1.5,
+          height: TILE_SIZE / 1.5,
+        }),
+        area(),
+        color(),
+        destructible({
+          animate: false,
+          stopPropagation: false,
+          noPowerUp: true,
+        }),
+        anchor("center"),
+        powerUp(),
+        opacity(1),
+        lifespan(8, { fade: 1 }),
+      ],
+    },
+  }) as unknown as LevelComp;
 
   // display score
   const livesLabel = add([
@@ -290,8 +310,8 @@ scene("game", () => {
     z(100),
   ]);
 
-  playersMap["1"] = createPlayer(vec2(3, 3), { id: "1" });
-  playersMap["2"] = createPlayer(vec2(13, 3), { id: "2" });
+  playersMap["1"] = createPlayer(vec2(2, 2), { id: "1" });
+  playersMap["2"] = createPlayer(vec2(24, 2), { id: "2" });
 
   const directionsMap = {
     left: LEFT,
@@ -301,7 +321,7 @@ scene("game", () => {
   };
 
   const player = playersMap[PLAYER_ID];
-  player.use(broadcastComp());
+  // player.use(broadcastComp());
 
   for (const dir in directionsMap) {
     onKeyDown(dir as Key, () => {
@@ -313,7 +333,7 @@ scene("game", () => {
 
   onKeyPress("space", () => {
     if (player.currBombs >= player.maxBombs) return;
-    const pos = myPos2Tile(player.pos.sub(TILE_SIZE * 2, TILE_SIZE * 2));
+    const pos = myPos2Tile(player.pos.sub(TILE_SIZE * 1, TILE_SIZE * 1));
 
     if (level.getAt(pos).some((obj) => obj.is("bomb"))) return;
 
