@@ -61,7 +61,7 @@ mqttClient.on("message", (topic, message) => {
 
         // Give each player a random position between 0 and 3 and a color
         const positions = shuffle([0, 1, 2, 3]);
-        const colors = shuffle(["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF"]);
+        const colors = shuffle(["#FF6347", "#FF8C00", "#FFD700", "#32CD32", "#1E90FF"]);
         const playerIds = Object.keys(players);
 
         playerIds.forEach((playerId) => {

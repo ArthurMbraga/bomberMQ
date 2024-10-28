@@ -109,7 +109,7 @@ type StartMessage = {
   numberOfPlayers: number;
 };
 
-const INITIAL_POSITIONS = [vec2(2, 2), vec2(24, 2), vec2(2, 24), vec2(24, 24)];
+const INITIAL_POSITIONS = [vec2(2, 2), vec2(24, 2), vec2(2, 8), vec2(24, 8)];
 const initialPlayersData: StartMessage[] = [];
 
 mqttClient.on("message", (topic, message) => {
@@ -341,8 +341,11 @@ scene("game", () => {
   // Add players
   initialPlayersData.forEach((data) => {
     const { playerId, position, color } = data;
+
+    const tilePos = INITIAL_POSITIONS[position];
+
     const player = createPlayer(
-      vec2(position, position),
+      vec2(tilePos.x * TILE_SIZE, tilePos.y * TILE_SIZE),
       { id: playerId, color }
     );
 
