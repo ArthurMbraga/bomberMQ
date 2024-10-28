@@ -132,18 +132,24 @@ function extractPlayerIdFromTopic(topic: string) {
 
 let attributesCounter = 0;
 let lastAtributes = "";
-function sendPlayerAttributes(playerId: string, attributes: PlayerAttributes) {
-  const action: PlayerAttributesMessage = {
-    ...attributes,
-    count: attributesCounter++,
-  };
+function asyncSendPlayerAttributes(
+  playerId: string,
+  attributes: PlayerAttributes
+) {
+  return new Promise<void>((resolve) => {
+    const action: PlayerAttributesMessage = {
+      ...attributes,
+      count: attributesCounter++,
+    };
 
-  const attributesString = JSON.stringify(attributes);
-  if (lastAtributes === attributesString) return;
-  lastAtributes = attributesString;
+    const attributesString = JSON.stringify(attributes);
+    if (lastAtributes === attributesString) return;
+    lastAtributes = attributesString;
 
-  const topic = `game/player/${playerId}/attributes`;
-  mqttClient.publishAsync(topic, JSON.stringify(action));
+    const topic = `game/player/${playerId}/attributes`;
+    mqttClient.publish(topic, JSON.stringify(action));
+    resolve();
+  });
 }
 
 let bombCounter = 0;
@@ -179,13 +185,10 @@ function handlePlayerAttributes(
     return;
   }
 
-  const { imune, lives, speed, curSpeed, force, position } = attributes;
+  const { imune, lives, position } = attributes;
 
   player.imune = imune;
   player.lives = lives;
-  player.speed = speed;
-  player.curSpeed = curSpeed;
-  player.force = force;
   player.pos = vec2(position.x, position.y);
 }
 
@@ -196,12 +199,9 @@ function broadcastComp(): any {
       const attributes = {
         imune: this.imune,
         lives: this.lives,
-        speed: this.speed,
-        curSpeed: this.curSpeed,
-        force: this.force,
         position: { x: this.pos.x, y: this.pos.y },
       } as PlayerAttributes;
-      sendPlayerAttributes(this.playerId, attributes);
+      asyncSendPlayerAttributes(this.playerId, attributes);
     },
   } as any;
 }
