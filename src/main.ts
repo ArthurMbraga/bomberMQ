@@ -62,7 +62,7 @@ const mqttClient = mqtt.connect("ws://172.20.10.8:1883");
 
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
-  mqttClient.subscribe("game/player/+/move");
+  mqttClient.subscribe("game/player/+/attributes");
   mqttClient.subscribe("game/player/+/bomb");
   mqttClient.subscribe("game/player/+/death");
   // mqttClient.subscribe("game/newPlayer");
@@ -102,7 +102,7 @@ mqttClient.on("message", (topic, message) => {
     if (topicsCOunter[topic] > decodedMessage.count) return;
     topicsCOunter[topic] = decodedMessage.count;
 
-    if (topic.endsWith("/atributes")) {
+    if (topic.endsWith("/attributes")) {
       handlePlayerAttributes(
         playerId,
         decodedMessage as PlayerAttributesMessage
@@ -131,13 +131,18 @@ function extractPlayerIdFromTopic(topic: string) {
 }
 
 let attributesCounter = 0;
+let lastAtributes = "";
 function sendPlayerAttributes(playerId: string, attributes: PlayerAttributes) {
   const action: PlayerAttributesMessage = {
     ...attributes,
     count: attributesCounter++,
   };
-  const topic = `game/player/${playerId}/attributes`;
 
+  const attributesString = JSON.stringify(attributes);
+  if (lastAtributes === attributesString) return;
+  lastAtributes = attributesString;
+
+  const topic = `game/player/${playerId}/attributes`;
   mqttClient.publishAsync(topic, JSON.stringify(action));
 }
 
@@ -165,7 +170,7 @@ function placeBomb(pos: Vec2, data: BombData) {
 
 function handlePlayerAttributes(
   playerId: string,
-  atributes: PlayerAttributesMessage
+  attributes: PlayerAttributesMessage
 ) {
   const player = getPlayerById(playerId);
 
@@ -174,7 +179,7 @@ function handlePlayerAttributes(
     return;
   }
 
-  const { imune, lives, speed, curSpeed, force, position } = atributes;
+  const { imune, lives, speed, curSpeed, force, position } = attributes;
 
   player.imune = imune;
   player.lives = lives;
@@ -196,7 +201,6 @@ function broadcastComp(): any {
         force: this.force,
         position: { x: this.pos.x, y: this.pos.y },
       } as PlayerAttributes;
-
       sendPlayerAttributes(this.playerId, attributes);
     },
   } as any;
@@ -304,7 +308,6 @@ scene("game", () => {
       player.move(
         directionsMap[dir as keyof typeof directionsMap].scale(player.curSpeed)
       );
-      sendPlayerAttributes(PLAYER_ID, player.pos);
     });
   }
 
