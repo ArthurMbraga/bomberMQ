@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto:2.0
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+
+  website:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mqtt-broker
+    env_file:
+      - .env
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.orchestrator
+    depends_on:
+      - mqtt-broker
+    env_file:
+      - .env
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:

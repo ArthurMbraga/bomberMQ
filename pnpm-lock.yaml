@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      kaboom:
-        specifier: github:ArthurMbraga/kaboom#master
-        version: https://codeload.github.com/ArthurMbraga/kaboom/tar.gz/d59c433df9254f1718a2cf82ee69320d3d7d6492
+      kaplay:
+        specifier: github:ArthurMbraga/kaplay#master
+        version: https://codeload.github.com/ArthurMbraga/kaplay/tar.gz/542e7aa2da1a58ece7f459f167cfdbd0be409039
       mqtt:
         specifier: ^5.10.1
         version: 5.10.1
@@ -530,9 +530,9 @@ packages:
   js-sdsl@4.3.0:
     resolution: {integrity: sha512-mifzlm2+5nZ+lEcLJMoBK0/IH/bDg8XnJfd/Wq6IP+xoCjLZsTOnV2QpxlVbX9bMnkl5PdEjNtBJ9Cj1NjifhQ==}
 
-  kaboom@https://codeload.github.com/ArthurMbraga/kaboom/tar.gz/d59c433df9254f1718a2cf82ee69320d3d7d6492:
-    resolution: {tarball: https://codeload.github.com/ArthurMbraga/kaboom/tar.gz/d59c433df9254f1718a2cf82ee69320d3d7d6492}
-    version: 3000.1.17
+  kaplay@https://codeload.github.com/ArthurMbraga/kaplay/tar.gz/542e7aa2da1a58ece7f459f167cfdbd0be409039:
+    resolution: {tarball: https://codeload.github.com/ArthurMbraga/kaplay/tar.gz/542e7aa2da1a58ece7f459f167cfdbd0be409039}
+    version: 4000.0.0-alpha.14
 
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
@@ -1070,7 +1070,7 @@ snapshots:
 
   js-sdsl@4.3.0: {}
 
-  kaboom@https://codeload.github.com/ArthurMbraga/kaboom/tar.gz/d59c433df9254f1718a2cf82ee69320d3d7d6492: {}
+  kaplay@https://codeload.github.com/ArthurMbraga/kaplay/tar.gz/542e7aa2da1a58ece7f459f167cfdbd0be409039: {}
 
   lru-cache@10.4.3: {}
 

@@ -1,4 +1,4 @@
-import { ColorComp, Comp } from "kaboom";
+import { ColorComp, Comp } from "kaplay";
 import {
   INCREASE_BOMBS,
   INCREASE_RANGE,

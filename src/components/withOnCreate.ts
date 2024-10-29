@@ -1,4 +1,4 @@
-import { Comp } from "kaboom";
+import { Comp } from "kaplay";
 
 export type OnCreateComp = {
   isFirstTime: boolean;

@@ -1,4 +1,4 @@
-import { Comp, GameObj, TileComp, Vec2 } from "kaboom";
+import { Comp, GameObj, TileComp, Vec2 } from "kaplay";
 import { DestructibleComp } from "./destructible";
 import { OnCreateComp } from "./withOnCreate";
 

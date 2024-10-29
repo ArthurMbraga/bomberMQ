@@ -1,4 +1,4 @@
-import { Comp, GameObj, OpacityComp, TimerComp, Vec2 } from "kaboom";
+import { Comp, GameObj, OpacityComp, TimerComp, Vec2 } from "kaplay";
 import {
   DAMAGE_DEBUF,
   IMMUNITY_TIME,

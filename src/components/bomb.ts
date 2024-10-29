@@ -1,4 +1,4 @@
-import { AreaComp, Comp, ScaleComp, TileComp, TimerComp } from "kaboom";
+import { AreaComp, Comp, ScaleComp, TileComp, TimerComp } from "kaplay";
 import { BOMB_EXPLODE_TIME, INITIAL_BOMB_FORCE } from "../constants";
 
 export type BombData = {

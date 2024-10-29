@@ -1,4 +1,4 @@
-import { Comp, SpriteComp, TileComp } from "kaboom";
+import { Comp, SpriteComp, TileComp } from "kaplay";
 import { POWER_UP_PROB } from "../constants";
 
 export type DestructibleComp = {

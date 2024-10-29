@@ -1,13 +1,13 @@
-import { EventController, GameObj, Key, LevelComp, Vec2 } from "kaboom";
+import { EventController, GameObj, Key, LevelComp, Vec2 } from "kaplay";
 import mqtt from "mqtt";
 import { v4 as uuidv4 } from "uuid";
-import { explosion } from "./components/explosion";
 import { bomb, BombData } from "./components/bomb";
+import { destructible } from "./components/destructible";
+import { explosion } from "./components/explosion";
 import { createPlayer } from "./components/player";
 import { powerUpComp as powerUp } from "./components/powerUp";
-import { INITIAL_BOMB_FORCE, LEVEL_STRING, TILE_SIZE } from "./constants";
-import { destructible } from "./components/destructible";
 import { withOnCreate } from "./components/withOnCreate";
+import { INITIAL_BOMB_FORCE, LEVEL_STRING, TILE_SIZE } from "./constants";
 
 loadSprite("bean", "/sprites/bean.png");
 loadSprite("bomberman_front", "/sprites/bomberman_front.png");
@@ -52,7 +52,7 @@ loadSound("power_up", "/sounds/power_up.wav");
 randSeed(0);
 setBackground(Color.fromHex("#f0f0f0"));
 
-const playersMap: Record<string, GameObj> = {};
+const playersMap: Record<string, GameObj<any>> = {};
 const topicsCounter: Record<string, number> = {};
 
 const PLAYER_ID = uuidv4();
@@ -63,7 +63,8 @@ function getPlayerById(playerId: string) {
   return playersMap[playerId];
 }
 
-const mqttClient = mqtt.connect("ws://172.20.10.8:1883");
+const mqttBrokerUrl = import.meta.env.MQTT_BROKER_URL || "ws://localhost:1883";
+const mqttClient = mqtt.connect(mqttBrokerUrl);
 
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
@@ -469,5 +470,13 @@ function addButton(
 
   return { btn, btnText };
 }
+
+// Manually add player
+initialPlayersData.push({
+  playerId: PLAYER_ID,
+  position: 0,
+  color: "#FF6347",
+  numberOfPlayers: 1,
+});
 
 go("game");
