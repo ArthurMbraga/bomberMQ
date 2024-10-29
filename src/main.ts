@@ -63,7 +63,7 @@ function getPlayerById(playerId: string) {
   return playersMap[playerId];
 }
 
-const mqttBrokerUrl = import.meta.env.MQTT_BROKER_URL || "ws://localhost:1883";
+const mqttBrokerUrl = import.meta.env.MQTT_BROKER_URL || "ws://172.20.10.8:1883";
 const mqttClient = mqtt.connect(mqttBrokerUrl);
 
 mqttClient.on("connect", () => {

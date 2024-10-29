@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import 'kaboom/global'
+import 'kaplay/global'
 
 declare module '*.png' {
   const src: string
