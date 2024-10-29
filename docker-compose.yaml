@@ -9,6 +9,7 @@ services:
     volumes:
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
 
   website:
     build:
@@ -16,10 +17,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    depends_on:
-      - mqtt-broker
-    env_file:
-      - .env
+    environment:
+      NODE_ENV: production
+      MQTT_BROKER_URL: ws://172.20.10.2:1883
 
   orchestrator:
     build:
@@ -27,8 +27,6 @@ services:
       dockerfile: Dockerfile.orchestrator
     depends_on:
       - mqtt-broker
-    env_file:
-      - .env
 
 volumes:
   mosquitto-data:

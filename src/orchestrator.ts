@@ -1,6 +1,6 @@
 import mqtt from "mqtt";
 
-const mqttClient = mqtt.connect("ws://172.20.10.8:1883");
+const mqttClient = mqtt.connect("ws://mqtt-broker:1883");
 
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");

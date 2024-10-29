@@ -1,4 +1,4 @@
-import { EventController, GameObj, Key, LevelComp, Vec2 } from "kaplay";
+import { KEventController as EventController, GameObj, Key, LevelComp, Vec2 } from "kaplay";
 import mqtt from "mqtt";
 import { v4 as uuidv4 } from "uuid";
 import { bomb, BombData } from "./components/bomb";
@@ -63,7 +63,7 @@ function getPlayerById(playerId: string) {
   return playersMap[playerId];
 }
 
-const mqttBrokerUrl = import.meta.env.MQTT_BROKER_URL || "ws://172.20.10.8:1883";
+const mqttBrokerUrl = import.meta.env.MQTT_BROKER_URL || "ws://localhost:1883";
 const mqttClient = mqtt.connect(mqttBrokerUrl);
 
 mqttClient.on("connect", () => {
@@ -315,7 +315,6 @@ scene("game", () => {
   });
 
   const player = playersMap[PLAYER_ID];
-  // player.use(broadcastComp());
 
   for (const dir in directionsMap) {
     gameScene.onKeyDown(dir as Key, () => {
@@ -341,11 +340,6 @@ scene("game", () => {
       if (dir === "left" || dir === "down") {
         corners.push(nextPlayerPos.add(-halfTile.x, halfTile.y));
       }
-
-      //DRAW CORNERS
-      // corners.forEach((corner) => {
-      //   add([rect(5, 5), pos(corner), color(255, 0, 0)]);
-      // });
 
       // Check if any corner is inside a wall
       if (

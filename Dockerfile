@@ -10,6 +10,8 @@ COPY package.json pnpm-lock.yaml ./
 # Install dependencies
 RUN npm install -g pnpm && pnpm install
 
+RUN npm i -g serve
+
 # Copy the rest of the application code
 COPY . .
 
@@ -20,4 +22,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Command to run the Vite preview server
-CMD ["npm", "run", "preview"]
+CMD [ "serve", "-s", "dist" ]
