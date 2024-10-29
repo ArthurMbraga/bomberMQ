@@ -393,6 +393,14 @@ scene("game", () => {
 let hubInterval: NodeJS.Timeout;
 
 scene("menu", () => {
+  add([
+    text("Player Id:" + PLAYER_ID),
+    pos(width() / 2, height() / 2 + 108),
+    scale(1),
+    color(0, 0, 0),
+    anchor("center"),
+  ]);
+
   let isReady = false;
   let onUpdateEvent: EventController;
 
