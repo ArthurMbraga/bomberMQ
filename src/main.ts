@@ -1,4 +1,11 @@
-import { GameObj, Key, LevelComp, TextComp, Vec2 } from "kaboom";
+import {
+  EventController,
+  GameObj,
+  Key,
+  LevelComp,
+  TextComp,
+  Vec2,
+} from "kaboom";
 import mqtt from "mqtt";
 import { destructible, explode, withOnCreate } from "./components";
 import { createPlayer } from "./components/player";
@@ -344,10 +351,7 @@ scene("game", () => {
 
     const tilePos = INITIAL_POSITIONS[position];
 
-    const player = createPlayer(
-      vec2(tilePos.x * TILE_SIZE, tilePos.y * TILE_SIZE),
-      { id: playerId, color }
-    );
+    const player = createPlayer(tilePos, { id: playerId, color });
 
     playersMap[playerId] = player;
   });
@@ -390,18 +394,25 @@ let hubInterval: NodeJS.Timeout;
 
 scene("menu", () => {
   let isReady = false;
-  // display score
-  add([
-    text("Player Id:" + PLAYER_ID),
-    pos(width() / 2, height() / 2 + 108),
-    scale(1),
-    color(0, 0, 0),
-    anchor("center"),
-  ]);
+  let onUpdateEvent: EventController;
 
-  addButton("Ready", vec2(width() / 2, height() / 2), (_, btnText) => {
-    isReady = true;
-    btnText.text = "Waiting...";
+  addButton("Ready", vec2(width() / 2, height() / 2), (btn, btnText) => {
+    isReady = !isReady;
+
+    if (!onUpdateEvent)
+      onUpdateEvent = btn.onUpdate(() => {
+        const t = time() * 10;
+        btn.color = hsl2rgb((t / 20) % 1, 0.6, 0.7);
+        btn.scale = vec2(1.2);
+      });
+
+    onUpdateEvent.paused = !isReady;
+    btnText.text = isReady ? "Waiting..." : "Ready";
+
+    if (!isReady) {
+      btn.scale = vec2(1);
+      btn.color = rgb();
+    }
   });
 
   // Loop for sending ping to the server

@@ -24,6 +24,8 @@ type PlayersMap = {
   };
 };
 const players: PlayersMap = {};
+let readyCount = 0;
+const MIN_READY_COUNT = 10;
 
 mqttClient.on("message", (topic, message) => {
   if (topic.startsWith("hub/player/")) {
@@ -56,12 +58,20 @@ mqttClient.on("message", (topic, message) => {
         (playerId) => players[playerId].isReady
       );
 
-      if (allPlayersReady) {
+      readyCount = allPlayersReady ? readyCount + 1 : 0;
+      
+      if (allPlayersReady && readyCount > MIN_READY_COUNT) {
         console.log("All players are ready");
 
         // Give each player a random position between 0 and 3 and a color
         const positions = shuffle([0, 1, 2, 3]);
-        const colors = shuffle(["#FF6347", "#FF8C00", "#FFD700", "#32CD32", "#1E90FF"]);
+        const colors = shuffle([
+          "#FF6347",
+          "#FF8C00",
+          "#FFD700",
+          "#32CD32",
+          "#1E90FF",
+        ]);
         const playerIds = Object.keys(players);
 
         playerIds.forEach((playerId) => {
