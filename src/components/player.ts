@@ -4,7 +4,7 @@ import {
   IMMUNITY_TIME,
   INITIAL_BOMB_FORCE,
   NUM_LIVES,
-  SPEED,
+  INITIAL_SPEED,
   TILE_SIZE,
 } from "../constants";
 import { getOscillation } from "../utils";
@@ -58,8 +58,8 @@ export function createPlayer(position: Vec2, data: PlayerData) {
       playerId: data.id,
       imune: true,
       lives: NUM_LIVES,
-      speed: SPEED,
-      curSpeed: SPEED,
+      speed: INITIAL_SPEED,
+      curSpeed: INITIAL_SPEED,
       force: INITIAL_BOMB_FORCE,
       maxBombs: 1,
       currBombs: 0,

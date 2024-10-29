@@ -10,7 +10,7 @@ import mqtt from "mqtt";
 import { destructible, explode, withOnCreate } from "./components";
 import { createPlayer } from "./components/player";
 import { powerUpComp as powerUp } from "./components/powerUp";
-import { INITIAL_BOMB_FORCE, TILE_SIZE } from "./constants";
+import { INITIAL_BOMB_FORCE, INITIAL_SPEED, TILE_SIZE } from "./constants";
 import { bomb, BombData } from "./components/bomb";
 import { v4 as uuidv4 } from "uuid";
 
@@ -58,7 +58,7 @@ randSeed(0);
 setBackground(Color.fromHex("#f0f0f0"));
 
 const playersMap: Record<string, GameObj> = {};
-const topicsCOunter: Record<string, number> = {};
+const topicsCounter: Record<string, number> = {};
 
 const PLAYER_ID = uuidv4();
 
@@ -119,6 +119,8 @@ type StartMessage = {
 const INITIAL_POSITIONS = [vec2(2, 2), vec2(24, 2), vec2(2, 8), vec2(24, 8)];
 const initialPlayersData: StartMessage[] = [];
 
+const gameScene = add([]);
+
 mqttClient.on("message", (topic, message) => {
   if (topic.startsWith("game/player/")) {
     const playerId = extractPlayerIdFromTopic(topic);
@@ -126,10 +128,10 @@ mqttClient.on("message", (topic, message) => {
 
     const decodedMessage: BaseMessage = JSON.parse(message.toString());
 
-    if (!topicsCOunter[topic]) topicsCOunter[topic] = decodedMessage.count;
+    if (!topicsCounter[topic]) topicsCounter[topic] = decodedMessage.count;
 
-    if (topicsCOunter[topic] > decodedMessage.count) return;
-    topicsCOunter[topic] = decodedMessage.count;
+    if (topicsCounter[topic] > decodedMessage.count) return;
+    topicsCounter[topic] = decodedMessage.count;
 
     if (topic.endsWith("/attributes")) {
       handlePlayerAttributes(
@@ -209,7 +211,7 @@ setInterval(async () => {
   } as PlayerAttributes;
 
   await asyncSendPlayerAttributes(PLAYER_ID, attributes);
-});
+}, 10);
 
 let bombCounter = 0;
 function sendBombPlacement(position: Vec2, data: BombData) {
@@ -284,17 +286,14 @@ scene("game", () => {
       ],
       "=": () => [
         sprite("wall", { width: TILE_SIZE, height: TILE_SIZE }),
-        area(),
-        body({ isStatic: true }),
         anchor("center"),
         "wall",
       ],
       "+": () => [
         sprite("wood", { width: TILE_SIZE, height: TILE_SIZE }),
-        area(),
         destructible({ animate: true, stopPropagation: true }),
-        body({ isStatic: true }),
         anchor("center"),
+        "wood",
       ],
       "*": () => [
         sprite("fire", { width: TILE_SIZE, height: TILE_SIZE }),
@@ -330,7 +329,7 @@ scene("game", () => {
   }) as unknown as LevelComp;
 
   // display score
-  const livesLabel = add([
+  const livesLabel = gameScene.add([
     text(livesCounter.toString()),
     anchor("center"),
     pos(width() / 2, 80),
@@ -360,16 +359,51 @@ scene("game", () => {
   // player.use(broadcastComp());
 
   for (const dir in directionsMap) {
-    onKeyDown(dir as Key, () => {
-      player.move(
-        directionsMap[dir as keyof typeof directionsMap].scale(player.curSpeed)
-      );
+    gameScene.onKeyDown(dir as Key, () => {
+      // Check if there is a wall in the direction
+      const delta = directionsMap[dir as keyof typeof directionsMap];
+      const nextPlayerPos = player.pos.add(delta.scale(player.curSpeed));
+
+      // Half of the tile size
+      const halfTile = vec2(TILE_SIZE / 2, TILE_SIZE / 2).scale(0.95);
+
+      // Check 2 player corners
+      const corners: Vec2[] = [];
+
+      if (dir === "right" || dir === "down") {
+        corners.push(nextPlayerPos.add(halfTile));
+      }
+      if (dir === "left" || dir === "up") {
+        corners.push(nextPlayerPos.sub(halfTile));
+      }
+      if (dir === "right" || dir === "up") {
+        corners.push(nextPlayerPos.add(halfTile.x, -halfTile.y));
+      }
+      if (dir === "left" || dir === "down") {
+        corners.push(nextPlayerPos.add(-halfTile.x, halfTile.y));
+      }
+
+      //DRAW CORNERS
+      // corners.forEach((corner) => {
+      //   add([rect(5, 5), pos(corner), color(255, 0, 0)]);
+      // });
+
+      // Check if any corner is inside a wall
+      if (
+        corners.some((corner) =>
+          level
+            .getAt(myPos2Tile(corner))
+            .some((obj) => obj.is("wall") || obj.is("wood"))
+        )
+      )
+        return;
+      player.pos = nextPlayerPos;
     });
   }
 
-  onKeyPress("space", () => {
+  gameScene.onKeyPress("space", () => {
     if (player.currBombs >= player.maxBombs) return;
-    const pos = myPos2Tile(player.pos.sub(TILE_SIZE * 1, TILE_SIZE * 1));
+    const pos = myPos2Tile(player.pos);
 
     if (level.getAt(pos).some((obj) => obj.is("bomb"))) return;
 
@@ -386,14 +420,18 @@ scene("game", () => {
   });
 
   function myPos2Tile(pos: Vec2) {
-    return vec2(Math.round(pos.x / TILE_SIZE), Math.round(pos.y / TILE_SIZE));
+    const offset = pos.sub(TILE_SIZE * 1, TILE_SIZE * 1);
+    return vec2(
+      Math.round(offset.x / TILE_SIZE),
+      Math.round(offset.y / TILE_SIZE)
+    );
   }
 });
 
 let hubInterval: NodeJS.Timeout;
 
 scene("menu", () => {
-  add([
+  gameScene.add([
     text("Player Id:" + PLAYER_ID),
     pos(width() / 2, height() / 2 + 108),
     scale(1),
@@ -438,7 +476,7 @@ function addButton(
   callback: (btn: GameObj, btnText: GameObj) => void
 ) {
   // add a parent background object
-  const btn = add([
+  const btn = gameScene.add([
     rect(240, 80, { radius: 8 }),
     pos(p),
     area(),
@@ -474,4 +512,12 @@ function addButton(
   return { btn, btnText };
 }
 
-go("menu");
+// ADD player
+initialPlayersData.push({
+  playerId: PLAYER_ID,
+  position: 0,
+  color: "#FFAABB",
+  numberOfPlayers: 1,
+});
+
+go("game");
