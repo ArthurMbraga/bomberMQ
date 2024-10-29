@@ -211,7 +211,7 @@ setInterval(async () => {
   } as PlayerAttributes;
 
   await asyncSendPlayerAttributes(PLAYER_ID, attributes);
-}, 10);
+}, 10); 
 
 let bombCounter = 0;
 function sendBombPlacement(position: Vec2, data: BombData) {
@@ -512,12 +512,4 @@ function addButton(
   return { btn, btnText };
 }
 
-// ADD player
-initialPlayersData.push({
-  playerId: PLAYER_ID,
-  position: 0,
-  color: "#FFAABB",
-  numberOfPlayers: 1,
-});
-
-go("game");
+go("menu");
