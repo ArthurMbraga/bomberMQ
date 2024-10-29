@@ -472,11 +472,12 @@ function addButton(
 }
 
 // Manually add player
-initialPlayersData.push({
-  playerId: PLAYER_ID,
-  position: 0,
-  color: "#FF6347",
-  numberOfPlayers: 1,
-});
+// initialPlayersData.push({
+//   playerId: PLAYER_ID,
+//   position: 0,
+//   color: "#FF6347",
+//   numberOfPlayers: 1,
+// });
 
-go("game");
+// go("game");
+go("menu");
