@@ -1,18 +1,13 @@
-import {
-  EventController,
-  GameObj,
-  Key,
-  LevelComp,
-  TextComp,
-  Vec2,
-} from "kaboom";
+import { EventController, GameObj, Key, LevelComp, Vec2 } from "kaboom";
 import mqtt from "mqtt";
-import { destructible, explode, withOnCreate } from "./components";
+import { v4 as uuidv4 } from "uuid";
+import { explosion } from "./components/explosion";
+import { bomb, BombData } from "./components/bomb";
 import { createPlayer } from "./components/player";
 import { powerUpComp as powerUp } from "./components/powerUp";
-import { INITIAL_BOMB_FORCE, INITIAL_SPEED, TILE_SIZE } from "./constants";
-import { bomb, BombData } from "./components/bomb";
-import { v4 as uuidv4 } from "uuid";
+import { INITIAL_BOMB_FORCE, LEVEL_STRING, TILE_SIZE } from "./constants";
+import { destructible } from "./components/destructible";
+import { withOnCreate } from "./components/withOnCreate";
 
 loadSprite("bean", "/sprites/bean.png");
 loadSprite("bomberman_front", "/sprites/bomberman_front.png");
@@ -61,18 +56,6 @@ const playersMap: Record<string, GameObj> = {};
 const topicsCounter: Record<string, number> = {};
 
 const PLAYER_ID = uuidv4();
-
-const LEVEL_STRING = [
-  "=========================",
-  "=  +++  +   +   +  +++  =",
-  "= =+=+= = = = = = =+=+= =",
-  "=  +++  +  +++  +  +++  =",
-  "=+=+=+=+=+=+=+=+=+=+=+=+=",
-  "=  +++  +  +++  +  +++  =",
-  "= =+=+= = = = = = =+=+= =",
-  "=  +++  +   +   +  +++  =",
-  "=========================",
-];
 
 let level: LevelComp;
 
@@ -211,7 +194,7 @@ setInterval(async () => {
   } as PlayerAttributes;
 
   await asyncSendPlayerAttributes(PLAYER_ID, attributes);
-}, 10); 
+}, 10);
 
 let bombCounter = 0;
 function sendBombPlacement(position: Vec2, data: BombData) {
@@ -253,23 +236,7 @@ function handlePlayerAttributes(
   player.pos = vec2(position.x, position.y);
 }
 
-function broadcastComp(): any {
-  return {
-    id: "broadCast",
-    update() {
-      const attributes = {
-        imune: this.imune,
-        lives: this.lives,
-        position: { x: this.pos.x, y: this.pos.y },
-      } as PlayerAttributes;
-      asyncSendPlayerAttributes(this.playerId, attributes);
-    },
-  } as any;
-}
-
 scene("game", () => {
-  let livesCounter = 3;
-
   level = addLevel(LEVEL_STRING, {
     tileWidth: TILE_SIZE,
     tileHeight: TILE_SIZE,
@@ -302,7 +269,7 @@ scene("game", () => {
         anchor("center"),
         pos(),
         rotate(0),
-        explode(),
+        explosion(),
         opacity(1),
         lifespan(0.5, { fade: 0.5 }),
         { direction: undefined, force: INITIAL_BOMB_FORCE },
@@ -327,15 +294,6 @@ scene("game", () => {
       ],
     },
   }) as unknown as LevelComp;
-
-  // display score
-  const livesLabel = gameScene.add([
-    text(livesCounter.toString()),
-    anchor("center"),
-    pos(width() / 2, 80),
-    fixed(),
-    z(100),
-  ]);
 
   const directionsMap = {
     left: LEFT,
@@ -512,4 +470,4 @@ function addButton(
   return { btn, btnText };
 }
 
-go("menu");
+go("game");

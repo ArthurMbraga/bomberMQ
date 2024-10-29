@@ -1,6 +1,11 @@
-import { ColorComp, Comp, SpriteAnim } from "kaboom";
+import { ColorComp, Comp } from "kaboom";
+import {
+  INCREASE_BOMBS,
+  INCREASE_RANGE,
+  INCREASE_SPEED,
+  POWER_UP_RARITY,
+} from "../constants";
 import { getOscillation } from "../utils";
-import { INCREASE_BOMBS, INCREASE_RANGE, INCREASE_SPEED, POWER_UP_RARITY } from "../constants";
 
 export function powerUpComp(): Comp {
   return {

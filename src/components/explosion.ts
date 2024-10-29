@@ -1,81 +1,20 @@
-import { Comp, GameObj, SpriteComp, TileComp, Vec2 } from "kaboom";
-import { POWER_UP_PROB } from "../constants";
+import { Comp, GameObj, TileComp, Vec2 } from "kaboom";
+import { DestructibleComp } from "./destructible";
+import { OnCreateComp } from "./withOnCreate";
 
-type DestructibleConfig = {
-  stopPropagation: boolean;
-  animate: boolean;
-  noPowerUp?: boolean;
-};
-
-export type DestructibleComp = {
-  stopPropagation: boolean;
-  animate: boolean;
-  begin: () => boolean;
-} & Comp &
-  SpriteComp &
-  TileComp;
-
-export function destructible(config: DestructibleConfig): DestructibleComp {
-  return {
-    id: "destructible",
-    require: ["sprite", "tile"],
-    add() {
-      const spriteComp = this;
-      const tileComp = this;
-      const level = tileComp.getLevel();
-      spriteComp.onAnimEnd((anim: string) => {
-        if (anim === "explode") {
-          level?.remove(this as any);
-
-          if (!config.noPowerUp && Math.random() < POWER_UP_PROB) {
-            level.spawn("$", tileComp.tilePos);
-          }
-        }
-      });
-    },
-    begin() {
-      const tileComp = this;
-      const spriteComp = this;
-
-      const level = tileComp.getLevel();
-      if (config.animate) spriteComp.play("explode");
-      else level?.remove(this as any);
-      return config.stopPropagation;
-    },
-  } as any;
-}
-
-type OnCreateComp = {
-  isFirstTime: boolean;
-  onCreate?: Function;
-} & Comp;
-
-export function withOnCreate(): OnCreateComp {
-  return {
-    id: "withOnCreate",
-    isFirstTime: true,
-    update() {
-      if (this.isFirstTime && this.onCreate) {
-        this.onCreate();
-        this.isFirstTime = false;
-      }
-    },
-  };
-}
-
-type ExplodeComp = {
+type ExplosionComp = {
   direction: Vec2;
   force: number;
 } & Comp &
   OnCreateComp;
 
-export function explode(): ExplodeComp {
+export function explosion(): ExplosionComp {
   return {
     id: "explode",
     require: ["pos", "withOnCreate", "rotate"],
     add() {},
     onCreate() {
-      const tileComp = this as TileComp & ExplodeComp;
+      const tileComp = this as TileComp & ExplosionComp;
       const level = tileComp.getLevel();
 
       function containsWall(objs: GameObj[]) {

@@ -1,5 +1,5 @@
 export const TILE_SIZE = 64;
-export const INITIAL_SPEED = 2;
+export const INITIAL_SPEED = 2.5;
 export const DAMAGE_DEBUF = 0.5;
 export const IMMUNITY_TIME = 2;
 export const INITIAL_BOMB_FORCE = 1;
@@ -17,3 +17,15 @@ export const POWER_UP_RARITY = {
   speed: 0.25,
   range: 0.25,
 };
+
+export const LEVEL_STRING = [
+  "=========================",
+  "=  +++  +   +   +  +++  =",
+  "= =+=+= = = = = = =+=+= =",
+  "=  +++  +  +++  +  +++  =",
+  "=+=+=+=+=+=+=+=+=+=+=+=+=",
+  "=  +++  +  +++  +  +++  =",
+  "= =+=+= = = = = = =+=+= =",
+  "=  +++  +   +   +  +++  =",
+  "=========================",
+];
