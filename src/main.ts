@@ -431,7 +431,7 @@ scene("game", () => {
 let hubInterval: NodeJS.Timeout;
 
 scene("menu", () => {
-  gameScene.add([
+  add([
     text("Player Id:" + PLAYER_ID),
     pos(width() / 2, height() / 2 + 108),
     scale(1),
@@ -476,7 +476,7 @@ function addButton(
   callback: (btn: GameObj, btnText: GameObj) => void
 ) {
   // add a parent background object
-  const btn = gameScene.add([
+  const btn = add([
     rect(240, 80, { radius: 8 }),
     pos(p),
     area(),
