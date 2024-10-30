@@ -10,7 +10,7 @@ The BomberMQ project consists of three main components:
 
 1. **MQTT Broker**: Facilitates real-time communication between the game clients and the orchestrator. It handles the messaging protocol and ensures that messages are delivered to the appropriate recipients.
 2. **Web Application**: The front-end of the game, built with Vite and TypeScript. It provides the user interface and game logic for players to interact with the game.
-3. **Orchestrator**: Manages the game state and player interactions. It ensures that all players are synchronized and handles when the game should start and the initial game setup.
+3. **Orchestrator**: It ensures that all players are synchronized and handles when the game should start and the initial game setup.
 
 
 ## Deployment
@@ -43,6 +43,8 @@ Docker Compose will expose the following services:
 
 - **BomberMQ Web Server**: accessible `http://localhost:3000`
 - **MQTT Broker**: accessible `ws://localhost:1883`
+
+## Development Setup
 
 ### Prerequisites
 
