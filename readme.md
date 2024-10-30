@@ -6,7 +6,7 @@ BomberMQ is a multiplayer game built with TypeScript, Vite, and MQTT for real-ti
 
 ## Gameplay example
 
-![BomberMQ Gameplay](https://github.com/ArthurMbraga/bomberMQ/raw/main/public/game_play.jpeg)
+![BomberMQ Gameplay](https://github.com/ArthurMbraga/bomberMQ/raw/main/public/gameplay.jpeg)
 
 ## Architecture
 
