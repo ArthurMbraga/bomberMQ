@@ -4,7 +4,7 @@ const mqttClient = mqtt.connect("ws://mqtt-broker:1883");
 
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
-  mqttClient.subscribe("hub/player/+/ping");
+  mqttClient.subscribe("hub/player/+/ping", { qos: 0 });
 });
 
 mqttClient.on("error", (err) => {
@@ -59,8 +59,10 @@ mqttClient.on("message", (topic, message) => {
       );
 
       readyCount = allPlayersReady ? readyCount + 1 : 0;
-      
+
+      console.log("players:", players);
       if (allPlayersReady && readyCount > MIN_READY_COUNT) {
+        readyCount = 0;
         console.log("All players are ready");
 
         // Give each player a random position between 0 and 3 and a color
@@ -73,6 +75,7 @@ mqttClient.on("message", (topic, message) => {
           "#1E90FF",
         ]);
         const playerIds = Object.keys(players);
+        const randomSeed = Math.random();
 
         playerIds.forEach((playerId) => {
           const position = positions.pop();
@@ -86,8 +89,14 @@ mqttClient.on("message", (topic, message) => {
               position,
               color,
               numberOfPlayers,
-            })
+              randomSeed,
+            }),
+            { qos: 2 }
           );
+        });
+
+        Object.keys(players).forEach((playerId) => {
+          delete players[playerId];
         });
       }
     }

@@ -19,7 +19,8 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      MQTT_BROKER_URL: ws://172.20.10.2:1883
+    env_file:
+      - .env
 
   orchestrator:
     build:

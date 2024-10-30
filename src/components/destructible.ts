@@ -27,7 +27,7 @@ export function destructible(config: DestructibleConfig): DestructibleComp {
         if (anim === "explode") {
           level?.remove(this as any);
 
-          if (!config.noPowerUp && Math.random() < POWER_UP_PROB) {
+          if (!config.noPowerUp && rand() < POWER_UP_PROB) {
             level.spawn("$", tileComp.tilePos);
           }
         }

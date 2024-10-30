@@ -1,4 +1,10 @@
-import { KEventController as EventController, GameObj, Key, LevelComp, Vec2 } from "kaplay";
+import {
+  KEventController as EventController,
+  GameObj,
+  Key,
+  LevelComp,
+  Vec2,
+} from "kaplay";
 import mqtt from "mqtt";
 import { v4 as uuidv4 } from "uuid";
 import { bomb, BombData } from "./components/bomb";
@@ -9,9 +15,7 @@ import { powerUpComp as powerUp } from "./components/powerUp";
 import { withOnCreate } from "./components/withOnCreate";
 import { INITIAL_BOMB_FORCE, LEVEL_STRING, TILE_SIZE } from "./constants";
 
-loadSprite("bean", "/sprites/bean.png");
 loadSprite("bomberman_front", "/sprites/bomberman_front.png");
-loadSprite("spike", "/sprites/spike.png");
 loadSprite("wall", "/sprites/wall.png");
 loadSprite("wood", "/sprites/wood-explode.png", {
   sliceX: 5,
@@ -21,7 +25,6 @@ loadSprite("wood", "/sprites/wood-explode.png", {
     idle: 0,
   },
 });
-loadSprite("ghosty", "/sprites/ghosty.png");
 loadSprite("bomb", "/sprites/16bit_bomb1.png");
 loadSprite("fire", "/sprites/fire.png", {
   sliceX: 3,
@@ -48,8 +51,7 @@ loadSound("place_bomb", "/sounds/place_bomb.wav");
 loadSound("die", "/sounds/die.wav");
 loadSound("power_up", "/sounds/power_up.wav");
 
-// FIX SEED
-randSeed(0);
+
 setBackground(Color.fromHex("#f0f0f0"));
 
 const playersMap: Record<string, GameObj<any>> = {};
@@ -63,12 +65,13 @@ function getPlayerById(playerId: string) {
   return playersMap[playerId];
 }
 
-const mqttBrokerUrl = import.meta.env.MQTT_BROKER_URL || "ws://localhost:1883";
+const mqttBrokerUrl =
+  import.meta.env.VITE_MQTT_BROKER_URL || "ws://localhost:1883";
 const mqttClient = mqtt.connect(mqttBrokerUrl);
 
 mqttClient.on("connect", () => {
   console.log("Connected to MQTT");
-  mqttClient.subscribe("game/start");
+  mqttClient.subscribe("game/start", { qos: 2 });
 });
 
 mqttClient.on("error", (err) => {
@@ -98,9 +101,10 @@ type StartMessage = {
   position: number;
   color: string;
   numberOfPlayers: number;
+  randomSeed: number;
 };
 
-const INITIAL_POSITIONS = [vec2(2, 2), vec2(24, 2), vec2(2, 8), vec2(24, 8)];
+const INITIAL_POSITIONS = [vec2(2, 2), vec2(20, 2), vec2(2, 8), vec2(20, 8)];
 const initialPlayersData: StartMessage[] = [];
 
 const gameScene = add([]);
@@ -143,11 +147,13 @@ mqttClient.on("message", (topic, message) => {
     const decodedMessage: StartMessage = JSON.parse(message.toString());
 
     initialPlayersData.push(decodedMessage);
-    const { playerId, numberOfPlayers } = decodedMessage;
+    const { playerId, numberOfPlayers, randomSeed } = decodedMessage;
+    
+    randSeed(randomSeed);
 
-    mqttClient.subscribe(`game/player/${playerId}/attributes`);
-    mqttClient.subscribe(`game/player/${playerId}/bomb`);
-    mqttClient.subscribe(`game/player/${playerId}/death`);
+    mqttClient.subscribe(`game/player/${playerId}/attributes`, { qos: 0 });
+    mqttClient.subscribe(`game/player/${playerId}/bomb`, { qos: 1 });
+    mqttClient.subscribe(`game/player/${playerId}/death`, { qos: 1 });
 
     if (initialPlayersData.length === numberOfPlayers) go("game");
   }
@@ -175,7 +181,7 @@ function asyncSendPlayerAttributes(
     lastAtributes = attributesString;
 
     const topic = `game/player/${playerId}/attributes`;
-    mqttClient.publish(topic, JSON.stringify(action));
+    mqttClient.publish(topic, JSON.stringify(action), { qos: 0 });
     resolve();
   });
 }
@@ -206,7 +212,8 @@ function sendBombPlacement(position: Vec2, data: BombData) {
   };
   mqttClient.publishAsync(
     `game/player/${PLAYER_ID}/bomb`,
-    JSON.stringify(action)
+    JSON.stringify(action),
+    { qos: 1 }
   );
 }
 
@@ -316,14 +323,21 @@ scene("game", () => {
 
   const player = playersMap[PLAYER_ID];
 
+  player.onDeath = () => {
+    mqttClient.publish(`game/player/${PLAYER_ID}/death`, JSON.stringify({}), {
+      qos: 1,
+    });
+  };
+
   for (const dir in directionsMap) {
     gameScene.onKeyDown(dir as Key, () => {
+      if (player.lives <= 0) return;
       // Check if there is a wall in the direction
       const delta = directionsMap[dir as keyof typeof directionsMap];
       const nextPlayerPos = player.pos.add(delta.scale(player.curSpeed));
 
       // Half of the tile size
-      const halfTile = vec2(TILE_SIZE / 2, TILE_SIZE / 2).scale(0.95);
+      const halfTile = vec2(TILE_SIZE / 2, TILE_SIZE / 2).scale(0.9);
 
       // Check 2 player corners
       const corners: Vec2[] = [];
@@ -350,11 +364,12 @@ scene("game", () => {
         )
       )
         return;
-      player.pos = nextPlayerPos;
+      player.moveBy(delta.scale(player.curSpeed));
     });
   }
 
   gameScene.onKeyPress("space", () => {
+    if (player.lives <= 0) return;
     if (player.currBombs >= player.maxBombs) return;
     const pos = myPos2Tile(player.pos);
 
@@ -418,7 +433,8 @@ scene("menu", () => {
   hubInterval = setInterval(() => {
     mqttClient.publish(
       `hub/player/${PLAYER_ID}/ping`,
-      JSON.stringify({ isReady })
+      JSON.stringify({ isReady }),
+      { qos: 0 }
     );
   }, 500);
 });
@@ -466,12 +482,13 @@ function addButton(
 }
 
 // Manually add player
-// initialPlayersData.push({
-//   playerId: PLAYER_ID,
-//   position: 0,
-//   color: "#FF6347",
-//   numberOfPlayers: 1,
-// });
+initialPlayersData.push({
+  playerId: PLAYER_ID,
+  position: 0,
+  color: "#FF6347",
+  numberOfPlayers: 1,
+  randomSeed: Math.random(),
+});
 
-// go("game");
-go("menu");
+go("game");
+// go("menu");

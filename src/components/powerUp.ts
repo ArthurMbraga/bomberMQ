@@ -19,13 +19,13 @@ export function powerUpComp(): Comp {
     },
     add() {
       // Generate type of power up
-      let rand = Math.random();
+      let r = rand();
       for (const [type, rarity] of Object.entries(POWER_UP_RARITY)) {
-        if (rand < rarity) {
+        if (r < rarity) {
           (this as any).type = type;
           break;
         }
-        rand -= rarity;
+        r -= rarity;
       }
 
       this.play(this.type);

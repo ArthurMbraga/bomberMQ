@@ -47,7 +47,7 @@ export function createPlayer(position: Vec2, data: PlayerData) {
   const player = add([
     sprite("bomberman_front", { width: TILE_SIZE, height: TILE_SIZE }),
     pos(position.scale(TILE_SIZE)),
-    area(),
+    area({ scale: 0.8 }),
     body(),
     anchor("center"),
     opacity(),
@@ -63,6 +63,7 @@ export function createPlayer(position: Vec2, data: PlayerData) {
       force: INITIAL_BOMB_FORCE,
       maxBombs: 1,
       currBombs: 0,
+      onDeath: () => {},
     },
   ]);
 
@@ -74,6 +75,7 @@ export function createPlayer(position: Vec2, data: PlayerData) {
       console.log("game over");
       destroy(player);
       play("die");
+      player.onDeath();
     } else play("damage");
   }
 
