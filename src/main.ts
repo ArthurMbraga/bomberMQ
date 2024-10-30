@@ -481,14 +481,14 @@ function addButton(
   return { btn, btnText };
 }
 
-// Manually add player
-initialPlayersData.push({
-  playerId: PLAYER_ID,
-  position: 0,
-  color: "#FF6347",
-  numberOfPlayers: 1,
-  randomSeed: Math.random(),
-});
+// // Manually add player
+// initialPlayersData.push({
+//   playerId: PLAYER_ID,
+//   position: 0,
+//   color: "#FF6347",
+//   numberOfPlayers: 1,
+//   randomSeed: Math.random(),
+// });
 
-go("game");
-// go("menu");
+// go("game");
+go("menu");
