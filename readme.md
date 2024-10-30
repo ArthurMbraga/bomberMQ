@@ -65,7 +65,8 @@ Docker Compose will expose the following services:
    VITE_MQTT_BROKER_URL=ws://localhost:1883
    ```
 
-### Running the orchestrator
+### Running the project
+#### Running the orchestrator
 
 To start the orchestrator, run:
 
@@ -76,7 +77,7 @@ pnpm run orchestrator
 If you make any modifications to the orchestrator files, you should run the command again to apply the changes.
 
 
-### Running the development web server
+##### Running the development web server
 
 To start the development server, ensure that both the **MQTT broker** and **orchestrator** are running. Then, run:
 
