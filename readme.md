@@ -2,11 +2,11 @@
 
 BomberMQ is a multiplayer game built with TypeScript, Vite, and MQTT for real-time communication. Players can place bombs, collect power-ups, and compete against each other in a dynamic game environment.
 
-![BomberMQ Logo](https://github.com/ArthurMbraga/bomberMQ/raw/main/public/logo_small.jpeg)
+![BomberMQ Logo](./public/logo_small.jpeg)
 
 ## Gameplay example
 
-![BomberMQ Gameplay](https://github.com/ArthurMbraga/bomberMQ/raw/main/public/gameplay.gif)
+![BomberMQ Gameplay](./public/gameplay.gif)
 
 ## Architecture
 
@@ -16,7 +16,6 @@ The BomberMQ project consists of three main components:
 2. **Web Application**: The front-end of the game, built with Vite and TypeScript. It provides the user interface and game logic for players to interact with the game.
 3. **Orchestrator**: It ensures that all players are synchronized, handles when the game should start and the initial game setup.
 
-
 ## Deployment
 
 ### Prerequisites
@@ -24,10 +23,8 @@ The BomberMQ project consists of three main components:
 - Docker
 - Docker Compose
 
-
 ### Deploying with Docker Compose
-  
-  
+
 You can deploy the project using Docker Compose. The `docker-compose.yaml` file is provided for this purpose.
 
 Before starting the application, remember to change the IP address of your machine in the `.env` file:
@@ -70,6 +67,7 @@ Docker Compose will expose the following services:
    ```
 
 ### Running the project
+
 #### Running the orchestrator
 
 To start the orchestrator, run:
@@ -80,7 +78,6 @@ pnpm run orchestrator
 
 If you make any modifications to the orchestrator files, you should run the command again to apply the changes.
 
-
 ##### Running the development web server
 
 To start the development server, ensure that both the **MQTT broker** and **orchestrator** are running. Then, run:
@@ -90,5 +87,3 @@ pnpm run dev
 ```
 
 The development server will be running at `http://localhost:3000`.
-
-
